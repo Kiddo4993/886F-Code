@@ -20,14 +20,14 @@ lemlib::Drivetrain drivetrain(&left_motors, // left motor group
                               2 // horizontal drift is 2 (for now)
 );
 
-// create an imu on port 10
+// create an imu on port 18
 pros::Imu imu(18);
-pros::Rotation verticalrotation_sensor(12);
-pros::Rotation horizontalrotation_sensor(16);
+pros::Rotation verticalrotation_sensor(-12);
+pros::Rotation horizontalrotation_sensor(-16);
 
-lemlib::TrackingWheel horizontal_tracking_wheel(&horizontalrotation_sensor, lemlib::Omniwheel::NEW_275, 2);
+lemlib::TrackingWheel horizontal_tracking_wheel(&horizontalrotation_sensor, lemlib::Omniwheel::NEW_2, 2);
 // vertical tracking wheel
-lemlib::TrackingWheel vertical_tracking_wheel(&verticalrotation_sensor, lemlib::Omniwheel::NEW_275, 0);
+lemlib::TrackingWheel vertical_tracking_wheel(&verticalrotation_sensor, lemlib::Omniwheel::NEW_2, 0);
 
 
 lemlib::OdomSensors sensors(&vertical_tracking_wheel, // vertical tracking wheel 1, set to null
@@ -43,26 +43,48 @@ lemlib::OdomSensors sensors(&vertical_tracking_wheel, // vertical tracking wheel
 // lemlib::TrackingWheel vertical_tracking_wheel(&vertical_encoder, lemlib::Omniwheel::NEW_275, -2.5);
 
 // lateral PID controller
-lemlib::ControllerSettings lateral_controller(10, // proportional gain (kP)
+// lemlib::ControllerSettings lateral_controller(10, // proportional gain (kP)
+//                                               0, // integral gain (kI)
+//                                               3, // derivative gain (kD)
+//                                               3, // anti windup
+//                                               1, // small error range, in inches
+//                                               100, // small error range timeout, in milliseconds
+//                                               3, // large error range, in inches
+//                                               500, // large error range timeout, in milliseconds
+//                                               20 // maximum acceleration (slew)
+// );
+
+lemlib::ControllerSettings lateral_controller(9, // proportional gain (kP)
                                               0, // integral gain (kI)
-                                              3, // derivative gain (kD)
-                                              3, // anti windup
-                                              1, // small error range, in inches
-                                              100, // small error range timeout, in milliseconds
-                                              3, // large error range, in inches
-                                              500, // large error range timeout, in milliseconds
-                                              20 // maximum acceleration (slew)
+                                              40, // derivative gain (kD)
+                                              0, // anti windup
+                                              0, // small error range, in inches
+                                              0, // small error range timeout, in milliseconds
+                                              0, // large error range, in inches
+                                              0, // large error range timeout, in milliseconds
+                                              0 // maximum acceleration (slew)
 );
 
 // angular PID controller
-lemlib::ControllerSettings angular_controller(2, // proportional gain (kP)
+// lemlib::ControllerSettings angular_controller(2, // proportional gain (kP)
+//                                               0, // integral gain (kI)
+//                                               10, // derivative gain (kD)
+//                                               3, // anti windup
+//                                               1, // small error range, in degrees
+//                                               100, // small error range timeout, in milliseconds
+//                                               3, // large error range, in degrees
+//                                               500, // large error range timeout, in milliseconds
+//                                               0 // maximum acceleration (slew)
+// );
+
+lemlib::ControllerSettings angular_controller(3, // proportional gain (kP)
                                               0, // integral gain (kI)
-                                              10, // derivative gain (kD)
-                                              3, // anti windup
-                                              1, // small error range, in degrees
-                                              100, // small error range timeout, in milliseconds
-                                              3, // large error range, in degrees
-                                              500, // large error range timeout, in milliseconds
+                                              20, // derivative gain (kD)
+                                              0, // anti windup
+                                              0, // small error range, in inches
+                                              0, // small error range timeout, in milliseconds
+                                              0, // large error range, in inches
+                                              0, // large error range timeout, in milliseconds
                                               0 // maximum acceleration (slew)
 );
 
@@ -152,9 +174,10 @@ void competition_initialize() {}
 void autonomous() {
 
     chassis.setPose(0, 0, 0);
-    chassis.moveToPoint(0, 25,1000);
-    chassis.turnToPoint(53, 53, 1000);
-    chassis.swingToHeading(180, DriveSide::LEFT, 2000); 
+    // chassis.moveToPoint(0, 24,1000);
+    chassis.turnToHeading(90, 100000);
+    // chassis.turnToPoint(53, 53, 1000);
+    // chassis.swingToHeading(180, DriveSide::LEFT, 2000); 
 }
 
 /**
@@ -174,15 +197,15 @@ void opcontrol() {
 	
 
 	while (true) {
-		pros::lcd::print(0, "%d %d %d", (pros::lcd::read_buttons() & LCD_BTN_LEFT) >> 2,
-		                 (pros::lcd::read_buttons() & LCD_BTN_CENTER) >> 1,
-		                 (pros::lcd::read_buttons() & LCD_BTN_RIGHT) >> 0);  // Prints status of the emulated screen LCDs
+		// pros::lcd::print(0, "%d %d %d", (pros::lcd::read_buttons() & LCD_BTN_LEFT) >> 2,
+		//                  (pros::lcd::read_buttons() & LCD_BTN_CENTER) >> 1,
+		//                  (pros::lcd::read_buttons() & LCD_BTN_RIGHT) >> 0);  // Prints status of the emulated screen LCDs
 
 		// Arcade control scheme
 		int dir = master.get_analog(ANALOG_LEFT_Y);    // Gets amount forward/backward from left joystick
 		int turn = master.get_analog(ANALOG_RIGHT_X);  // Gets the turn left/right from right joystick
-		left_motors.move(dir - turn);                      // Sets left motor voltage
-		right_motors.move(dir + turn);                     // Sets right motor voltage
+		left_motors.move(dir + turn);                      // Sets left motor voltage
+		right_motors.move(dir - turn);                     // Sets right motor voltage
 		pros::delay(20);                               // Run for 130 ms then update
 	}
 }
