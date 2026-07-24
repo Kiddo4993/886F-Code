@@ -57,12 +57,12 @@ lemlib::OdomSensors sensors(&vertical_tracking_wheel, // vertical tracking wheel
 lemlib::ControllerSettings lateral_controller(9, // proportional gain (kP)
                                               0, // integral gain (kI)
                                               40, // derivative gain (kD)
-                                              0, // anti windup
-                                              0, // small error range, in inches
-                                              0, // small error range timeout, in milliseconds
-                                              0, // large error range, in inches
-                                              0, // large error range timeout, in milliseconds
-                                              0 // maximum acceleration (slew)
+                                              3, // anti windup
+                                              1, // small error range, in inches
+                                              100, // small error range timeout, in milliseconds
+                                              3, // large error range, in inches
+                                              500, // large error range timeout, in milliseconds
+                                              20 // maximum acceleration (slew)
 );
 
 // angular PID controller
@@ -80,12 +80,12 @@ lemlib::ControllerSettings lateral_controller(9, // proportional gain (kP)
 lemlib::ControllerSettings angular_controller(3, // proportional gain (kP)
                                               0, // integral gain (kI)
                                               20, // derivative gain (kD)
-                                              0, // anti windup
-                                              0, // small error range, in inches
-                                              0, // small error range timeout, in milliseconds
-                                              0, // large error range, in inches
-                                              0, // large error range timeout, in milliseconds
-                                              0 // maximum acceleration (slew)
+                                              3, // anti windup
+                                              1, // small error range, in inches
+                                              100, // small error range timeout, in milliseconds
+                                              3, // large error range, in inches
+                                              500, // large error range timeout, in milliseconds
+                                              20 // maximum acceleration (slew)
 );
 
 lemlib::Chassis chassis(drivetrain, // drivetrain settings
@@ -174,8 +174,18 @@ void competition_initialize() {}
 void autonomous() {
 
     chassis.setPose(0, 0, 0);
-    // chassis.moveToPoint(0, 24,1000);
-    chassis.turnToHeading(90, 100000);
+    chassis.moveToPoint(24, 0,800);
+    chassis.turnToHeading(180, 800);
+    
+    // chainbar.move_relative(-100, 127);
+    // pros::delay(500);
+
+    // chassis.moveToPoint(24, 0, 800);
+    // chassis.turnToHeading(-90, 800);
+    
+    //  chainbar.move_relative(-100, 127);
+    // pros::delay(500);
+
     // chassis.turnToPoint(53, 53, 1000);
     // chassis.swingToHeading(180, DriveSide::LEFT, 2000); 
 }
@@ -206,6 +216,30 @@ void opcontrol() {
 		int turn = master.get_analog(ANALOG_RIGHT_X);  // Gets the turn left/right from right joystick
 		left_motors.move(dir + turn);                      // Sets left motor voltage
 		right_motors.move(dir - turn);                     // Sets right motor voltage
-		pros::delay(20);                               // Run for 130 ms then update
+		pros::delay(20);      
+
+        if (master.get_digital(DIGITAL_L1)) {
+            liftMotor.move(127);
+        } else if (master.get_digital(DIGITAL_L2)) {
+            liftMotor.move(-127);
+        } else if (master.get_digital(DIGITAL_R1)) {
+            intakeMotors.move(127);
+        } else if (master.get_digital(DIGITAL_R2)) {
+            intakeMotors.move(-127);
+        } else if (master.get_digital(DIGITAL_Y)) {
+            chainbar.move(127);
+        } else if (master.get_digital(DIGITAL_B)) {
+            chainbar.move(-127);
+        } else {
+            liftMotor.move(0);
+            intakeMotors.move(0);
+            chainbar.move(0);
+        }
+        
+
+
+
+        
+                                 // Run for 130 ms then update
 	}
 }
