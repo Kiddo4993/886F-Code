@@ -101,21 +101,65 @@ lemlib::Chassis chassis(drivetrain, // drivetrain settings
 );
 
 
+// Moves the chainbar to targetPosition (centidegrees, from chainbar_encoder)
+// using a PID loop. Runs as its own pros::Task, so calling this function does
+// not block the caller — use it as a macro (e.g. on a button press) to send
+// the chainbar to a preset position while the rest of opcontrol keeps running.
 void chainbarFunction(int targetPosition) {
+    static pros::Task* chainbarTask = nullptr;
 
-    double error;
-    double kP = 0.5; // Proportional gain, adjust as necessary
-
-    while()
-
-    // Set the target position for the chainbar
-    chainbar.move_absolute(targetPosition, 100); // Move to target position at max speed
-
-    // Wait until the chainbar reaches the target position
-    while (chainbar.get_position() != targetPosition) {
-        pros::delay(10); // Small delay to prevent CPU overload
+    // cancel any chainbar PID task already in progress so only one loop
+    // ever drives the motor at a time
+    if (chainbarTask != nullptr) {
+        chainbarTask->remove();
+        delete chainbarTask;
+        chainbarTask = nullptr;
     }
 
+    chainbarTask = new pros::Task([targetPosition]() {
+        double kP = 2;  // Proportional gain, adjust as necessary
+        double kI = 0.0;  // Integral gain, adjust as necessary
+        double kD = 50;  // Derivative gain, adjust as necessary
+
+        double error = 0;
+        double previousError = 0;
+        double integral = 0;
+        double derivative = 0;
+
+        const double errorThreshold = 1000;  // centidegrees (~0.2 degrees) considered "at target"
+        const int settleTime = 100;        // ms error must stay within threshold before exiting
+        int timeWithinThreshold = 0;
+
+        while (true) {
+            error = targetPosition - chainbar_encoder.get_position();
+
+            integral += error;
+            derivative = error - previousError;
+
+            double output = (kP * error) + (kI * integral) + (kD * derivative);
+
+            // clamp output to valid motor voltage range
+            if (output > 127) output = 127;
+            if (output < -127) output = -127;
+
+            chainbar.move(output);
+
+            previousError = error;
+
+            // consider the chainbar "at target" once it's within errorThreshold
+            // for settleTime milliseconds in a row
+            if ((error < 0 ? -error : error) < errorThreshold) {
+                timeWithinThreshold += 10;
+                if (timeWithinThreshold >= settleTime) break;
+            } else {
+                timeWithinThreshold = 0;
+            }
+
+            pros::delay(10);  // small delay to prevent CPU overload
+        }
+
+        chainbar.brake();  // hold the final position
+    });
 }
 // initialize function. Runs on program startup
 void initialize() {
@@ -128,6 +172,7 @@ void initialize() {
             pros::lcd::print(0, "X: %f", chassis.getPose().x); // x
             pros::lcd::print(1, "Y: %f", chassis.getPose().y); // y
             pros::lcd::print(2, "Theta: %f", chassis.getPose().theta); // heading
+            pros::lcd::print(3, "Chainbar: %d", chainbar_encoder.get_position()); // chainbar position, in encoder ticks (centidegrees)
             // delay to save resources
             pros::delay(100);
         }
@@ -350,6 +395,12 @@ void opcontrol() {
         }
         if(master.get_digital_new_press(DIGITAL_A)){
             intake_piston.toggle(); // toggle piston state
+        }
+        if (master.get_digital_new_press(DIGITAL_UP)) {
+            chainbar_encoder.reset_position(); // zero the chainbar encoder wherever it is right now
+        }
+        if (master.get_digital_new_press(DIGITAL_X)) {
+            chainbarFunction(-91427); // macro: drive chainbar to preset position
         }
         pros::delay(20);
 
