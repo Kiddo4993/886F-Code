@@ -43,9 +43,12 @@ lemlib::OdomSensors sensors(&vertical_tracking_wheel, // vertical tracking wheel
 // lemlib::TrackingWheel vertical_tracking_wheel(&vertical_encoder, lemlib::Omniwheel::NEW_275, -2.5);
 
 // lateral PID controller
-// lemlib::ControllerSettings lateral_controller(10, // proportional gain (kP)
+
+// );
+
+// lemlib::ControllerSettings lateral_controller(9, // proportional gain (kP)
 //                                               0, // integral gain (kI)
-//                                               3, // derivative gain (kD)
+//                                               40, // derivative gain (kD)
 //                                               3, // anti windup
 //                                               1, // small error range, in inches
 //                                               100, // small error range timeout, in milliseconds
@@ -54,17 +57,17 @@ lemlib::OdomSensors sensors(&vertical_tracking_wheel, // vertical tracking wheel
 //                                               20 // maximum acceleration (slew)
 // );
 
-lemlib::ControllerSettings lateral_controller(9, // proportional gain (kP)
+lemlib::ControllerSettings lateral_controller(6, // proportional gain (kP)
                                               0, // integral gain (kI)
-                                              40, // derivative gain (kD)
-                                              3, // anti windup
-                                              1, // small error range, in inches
-                                              100, // small error range timeout, in milliseconds
-                                              3, // large error range, in inches
-                                              500, // large error range timeout, in milliseconds
-                                              20 // maximum acceleration (slew)
-);
+                                              4.8, // derivative gain (kD)
+                                              0, // anti windup
+                                              0, // small error range, in inches
+                                              0, // small error range timeout, in milliseconds
+                                              0, // large error range, in inches
+                                              0, // large error range timeout, in milliseconds
+                                              0 // maximum acceleration (slew)
 
+);
 // angular PID controller
 // lemlib::ControllerSettings angular_controller(2, // proportional gain (kP)
 //                                               0, // integral gain (kI)
@@ -77,9 +80,9 @@ lemlib::ControllerSettings lateral_controller(9, // proportional gain (kP)
 //                                               0 // maximum acceleration (slew)
 // );
 
-lemlib::ControllerSettings angular_controller(3, // proportional gain (kP)
+lemlib::ControllerSettings angular_controller(1.9, // proportional gain (kP)
                                               0, // integral gain (kI)
-                                              20, // derivative gain (kD)
+                                              11.5, // derivative gain (kD)
                                               3, // anti windup
                                               1, // small error range, in inches
                                               100, // small error range timeout, in milliseconds
@@ -173,21 +176,75 @@ void competition_initialize() {}
  */
 void autonomous() {
 
-    chassis.setPose(0, 0, 0);
-    chassis.moveToPoint(24, 0,800);
-    chassis.turnToHeading(180, 800);
-    
-    // chainbar.move_relative(-100, 127);
-    // pros::delay(500);
+    // chassis.setPose(0, -59.5, 229.58);
+    // chassis.moveToPoint(0, -63,800);
 
-    // chassis.moveToPoint(24, 0, 800);
-    // chassis.turnToHeading(-90, 800);
+    // // chassis.setPose(0, 0, 0);
     
-    //  chainbar.move_relative(-100, 127);
-    // pros::delay(500);
+    // // chassis.turnToHeading(270, 1000);
+    // // chassis.moveToPoint(0, -67, 1000);
 
-    // chassis.turnToPoint(53, 53, 1000);
-    // chassis.swingToHeading(180, DriveSide::LEFT, 2000); 
+    // chassis.setPose(0, 0, 0);
+    // // chassis.turnToHeading(90, 10000);
+    // chassis.moveToPoint(0, 24, 1000);
+
+    
+    chassis.setPose(0.00, -66.93, 180.0);                                    // pt00  cm(0, -170) h=180
+
+    chassis.moveToPoint(  0.00, -62.99,  700, {.forwards = false});          // pt01  cm(0, -160) h=180
+    chassis.waitUntilDone();
+    chassis.moveToPoint(  0.00, -66.93,  700);                               // pt02  cm(0, -170) h=180
+    chassis.waitUntilDone();
+    chassis.moveToPoint(  0.00, -57.09,  750, {.forwards = false});          // pt03  cm(0, -145) h=90
+    chassis.waitUntilDone();
+    chassis.turnToHeading(90.0, 800);
+    chassis.waitUntilDone();
+    chassis.moveToPoint(-23.62, -57.09, 1300, {.forwards = false});          // pt04  cm(-60, -145) h=180
+    chassis.waitUntilDone();
+    chassis.turnToHeading(180.0, 800);
+    chassis.waitUntilDone();
+    chassis.moveToPoint(-23.62, -51.18,  700, {.forwards = false});          // pt05  cm(-60, -130) h=180
+    chassis.waitUntilDone();
+    chassis.turnToHeading(0.0, 800);
+    chassis.waitUntilDone();
+    chassis.moveToPoint(-23.62, -66.93, 1000, {.forwards = false});          // pt06  cm(-60, -170) h=0
+    chassis.waitUntilDone();
+    chassis.turnToHeading(180.0, 800);
+    chassis.waitUntilDone();
+    chassis.moveToPoint(-23.62, -51.18, 1000, {.forwards = false});          // pt07  cm(-60, -130) h=180
+    chassis.waitUntilDone();
+    chassis.turnToHeading(0.0, 800);
+    chassis.waitUntilDone();
+    chassis.moveToPoint(-23.62, -57.09,  700, {.forwards = false});          // pt08  cm(-60, -145) h=0
+    chassis.waitUntilDone();
+    chassis.moveToPoint(  0.00, -57.09, 1300);                               // pt09  cm(0, -145) h=0
+    chassis.waitUntilDone();
+    chassis.turnToHeading(180.0, 800);
+    chassis.waitUntilDone();
+    chassis.moveToPoint(  0.00, -25.59, 1600, {.forwards = false});          // pt10  cm(0, -65) h=180
+    chassis.waitUntilDone();
+    chassis.turnToHeading(316.2, 800);
+    chassis.waitUntilDone();
+    chassis.moveToPoint( 19.48, -45.59, 1450, {.forwards = false});          // pt11  cm(49.485, -115.801) h=316.2
+    chassis.waitUntilDone();
+    chassis.moveToPoint( 12.74, -38.95,  750);                               // pt12  cm(32.363, -98.922) h=316.5
+    chassis.waitUntilDone();
+    chassis.turnToHeading(0.0, 800);
+    chassis.waitUntilDone();
+    chassis.moveToPoint( 23.62, -57.09, 1200, {.forwards = false});          // pt13  cm(60, -145) h=0
+    chassis.waitUntilDone();
+    chassis.moveToPoint( 23.62, -66.93,  750, {.forwards = false});          // pt14  cm(60, -170) h=0
+    chassis.waitUntilDone();
+    chassis.turnToHeading(180.0, 800);
+    chassis.waitUntilDone();
+    chassis.moveToPoint( 23.62, -51.18, 1000, {.forwards = false});          // pt15  cm(60, -130) h=180
+    chassis.waitUntilDone();
+
+
+
+    
+
+
 }
 
 /**
@@ -205,41 +262,82 @@ void autonomous() {
  */
 void opcontrol() {
 	
+    
 
-	while (true) {
+	// while (true) {
 		// pros::lcd::print(0, "%d %d %d", (pros::lcd::read_buttons() & LCD_BTN_LEFT) >> 2,
 		//                  (pros::lcd::read_buttons() & LCD_BTN_CENTER) >> 1,
 		//                  (pros::lcd::read_buttons() & LCD_BTN_RIGHT) >> 0);  // Prints status of the emulated screen LCDs
 
 		// Arcade control scheme
-		int dir = master.get_analog(ANALOG_LEFT_Y);    // Gets amount forward/backward from left joystick
-		int turn = master.get_analog(ANALOG_RIGHT_X);  // Gets the turn left/right from right joystick
-		left_motors.move(dir + turn);                      // Sets left motor voltage
-		right_motors.move(dir - turn);                     // Sets right motor voltage
-		pros::delay(20);      
+		// int dir = master.get_analog(ANALOG_LEFT_Y);    // Gets amount forward/backward from left joystick
+		// int turn = master.get_analog(ANALOG_RIGHT_X);  // Gets the turn left/right from right joystick
+		// left_motors.move(dir + turn);                      // Sets left motor voltage
+		// right_motors.move(dir - turn);                     // Sets right motor voltage
+		// pros::delay(20);      
+
+        // if (master.get_digital(DIGITAL_R1)) {
+        //     liftMotor.move(127);
+        // } else if (master.get_digital(DIGITAL_R2)) {
+        //     liftMotor.move(-127);
+        // } else if (master.get_digital(DIGITAL_L1)) {
+        //     intakeMotors.move(127);
+        // } else if (master.get_digital(DIGITAL_L2)) {
+        //     intakeMotors.move(-127);
+        // } else if (master.get_digital(DIGITAL_Y)) {
+        //     chainbar.move(127);
+
+        // } else if (master.get_digital(DIGITAL_B)) {
+        //     chainbar.move(-127);
+        // } else {
+        //     liftMotor.move(0);
+        //     intakeMotors.move(0);
+        //     chainbar.brake();
+        // }
+
+    chainbar.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+
+    while (true) {
+        int dir = master.get_analog(ANALOG_LEFT_Y);
+        int turn = master.get_analog(ANALOG_RIGHT_X);
+        left_motors.move(dir + turn);
+        right_motors.move(dir - turn);
+
+        // Lift / intake — independent of chainbar now
+        if (master.get_digital(DIGITAL_R1)) {
+            liftMotor.move(127);
+        } else if (master.get_digital(DIGITAL_R2)) {
+            liftMotor.move(-127);
+        } else {
+            liftMotor.move(0);
+        }
 
         if (master.get_digital(DIGITAL_L1)) {
-            liftMotor.move(127);
-        } else if (master.get_digital(DIGITAL_L2)) {
-            liftMotor.move(-127);
-        } else if (master.get_digital(DIGITAL_R1)) {
             intakeMotors.move(127);
-        } else if (master.get_digital(DIGITAL_R2)) {
+        } else if (master.get_digital(DIGITAL_L2)) {
             intakeMotors.move(-127);
-        } else if (master.get_digital(DIGITAL_Y)) {
+        } else {
+            intakeMotors.move(0);
+        }
+
+        // Chainbar — separate block, unaffected by any other button
+        if (master.get_digital(DIGITAL_Y)) {
             chainbar.move(127);
         } else if (master.get_digital(DIGITAL_B)) {
             chainbar.move(-127);
         } else {
-            liftMotor.move(0);
-            intakeMotors.move(0);
-            chainbar.move(0);
+            chainbar.brake();  // actively holds position (HOLD brake mode)
         }
-        
+
+        pros::delay(20);
+
+            
 
 
 
-        
-                                 // Run for 130 ms then update
-	}
+            
+                                    // Run for 130 ms then update
+    }
 }
+
+
