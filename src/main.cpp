@@ -1,6 +1,8 @@
 #include "main.h"
 #include "lemlib/api.hpp" // IWYU pragma: keep
+#include "pros/misc.h"
 #include "pros/misc.hpp"
+#include "pros/rotation.hpp"
 
 using namespace pros; // IWYU pragma: keep
 
@@ -10,7 +12,8 @@ pros::MotorGroup liftMotor({-16, 20});
 pros::Motor intakeMotors({5});
 pros::Motor chainbar({18});
 pros::Controller master(pros::E_CONTROLLER_MASTER); // create a controller object for the master controller
-
+pros::adi::Pneumatics intake_piston('A', false, true); // create a piston object for the pneumatic piston on port 1
+pros::Rotation chainbar_encoder(17);
 // drivetrain settings
 lemlib::Drivetrain drivetrain(&left_motors, // left motor group
                               &right_motors, // right motor group
@@ -97,6 +100,23 @@ lemlib::Chassis chassis(drivetrain, // drivetrain settings
                         sensors // odometry sensors
 );
 
+
+void chainbarFunction(int targetPosition) {
+
+    double error;
+    double kP = 0.5; // Proportional gain, adjust as necessary
+
+    while()
+
+    // Set the target position for the chainbar
+    chainbar.move_absolute(targetPosition, 100); // Move to target position at max speed
+
+    // Wait until the chainbar reaches the target position
+    while (chainbar.get_position() != targetPosition) {
+        pros::delay(10); // Small delay to prevent CPU overload
+    }
+
+}
 // initialize function. Runs on program startup
 void initialize() {
     pros::lcd::initialize(); // initialize brain screen
@@ -321,14 +341,16 @@ void opcontrol() {
         }
 
         // Chainbar — separate block, unaffected by any other button
-        if (master.get_digital(DIGITAL_Y)) {
+        if (master.get_digital(DIGITAL_B)) {
             chainbar.move(127);
-        } else if (master.get_digital(DIGITAL_B)) {
+        } else if (master.get_digital(DIGITAL_Y)) {
             chainbar.move(-127);
         } else {
             chainbar.brake();  // actively holds position (HOLD brake mode)
         }
-
+        if(master.get_digital_new_press(DIGITAL_A)){
+            intake_piston.toggle(); // toggle piston state
+        }
         pros::delay(20);
 
             
