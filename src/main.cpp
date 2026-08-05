@@ -4,11 +4,11 @@
 
 using namespace pros; // IWYU pragma: keep
 
-pros::MotorGroup left_motors({-4, -11, -7}, pros::MotorGearset::blue); 
-pros::MotorGroup right_motors({3, 19, 2}, pros::MotorGearset::blue); 
-pros::MotorGroup liftMotor({20, -6});
+pros::MotorGroup left_motors({-3, -7, -11}, pros::MotorGearset::blue); 
+pros::MotorGroup right_motors({4, 6, 19}, pros::MotorGearset::blue); 
+pros::MotorGroup liftMotor({-16, 20});
 pros::Motor intakeMotors({5});
-pros::Motor chainbar({17});
+pros::Motor chainbar({18});
 pros::Controller master(pros::E_CONTROLLER_MASTER); // create a controller object for the master controller
 
 // drivetrain settings
@@ -20,10 +20,10 @@ lemlib::Drivetrain drivetrain(&left_motors, // left motor group
                               2 // horizontal drift is 2 (for now)
 );
 
-// create an imu on port 18
-pros::Imu imu(18);
+
+pros::Imu imu(14);
 pros::Rotation verticalrotation_sensor(-12);
-pros::Rotation horizontalrotation_sensor(-16);
+pros::Rotation horizontalrotation_sensor(-13);
 
 lemlib::TrackingWheel horizontal_tracking_wheel(&horizontalrotation_sensor, lemlib::Omniwheel::NEW_2, 2);
 // vertical tracking wheel
@@ -184,61 +184,61 @@ void autonomous() {
     // // chassis.turnToHeading(270, 1000);
     // // chassis.moveToPoint(0, -67, 1000);
 
-    // chassis.setPose(0, 0, 0);
-    // // chassis.turnToHeading(90, 10000);
+    chassis.setPose(0, 0, 0);
+    chassis.turnToHeading(90, 10000);
     // chassis.moveToPoint(0, 24, 1000);
 
     
-    chassis.setPose(0.00, -66.93, 180.0);                                    // pt00  cm(0, -170) h=180
-
-    chassis.moveToPoint(  0.00, -62.99,  700, {.forwards = false});          // pt01  cm(0, -160) h=180
-    chassis.waitUntilDone();
-    chassis.moveToPoint(  0.00, -66.93,  700);                               // pt02  cm(0, -170) h=180
-    chassis.waitUntilDone();
-    chassis.moveToPoint(  0.00, -57.09,  750, {.forwards = false});          // pt03  cm(0, -145) h=90
-    chassis.waitUntilDone();
-    chassis.turnToHeading(90.0, 800);
-    chassis.waitUntilDone();
-    chassis.moveToPoint(-23.62, -57.09, 1300, {.forwards = false});          // pt04  cm(-60, -145) h=180
-    chassis.waitUntilDone();
-    chassis.turnToHeading(180.0, 800);
-    chassis.waitUntilDone();
-    chassis.moveToPoint(-23.62, -51.18,  700, {.forwards = false});          // pt05  cm(-60, -130) h=180
-    chassis.waitUntilDone();
-    chassis.turnToHeading(0.0, 800);
-    chassis.waitUntilDone();
-    chassis.moveToPoint(-23.62, -66.93, 1000, {.forwards = false});          // pt06  cm(-60, -170) h=0
-    chassis.waitUntilDone();
-    chassis.turnToHeading(180.0, 800);
-    chassis.waitUntilDone();
-    chassis.moveToPoint(-23.62, -51.18, 1000, {.forwards = false});          // pt07  cm(-60, -130) h=180
-    chassis.waitUntilDone();
-    chassis.turnToHeading(0.0, 800);
-    chassis.waitUntilDone();
-    chassis.moveToPoint(-23.62, -57.09,  700, {.forwards = false});          // pt08  cm(-60, -145) h=0
-    chassis.waitUntilDone();
-    chassis.moveToPoint(  0.00, -57.09, 1300);                               // pt09  cm(0, -145) h=0
-    chassis.waitUntilDone();
-    chassis.turnToHeading(180.0, 800);
-    chassis.waitUntilDone();
-    chassis.moveToPoint(  0.00, -25.59, 1600, {.forwards = false});          // pt10  cm(0, -65) h=180
-    chassis.waitUntilDone();
-    chassis.turnToHeading(316.2, 800);
-    chassis.waitUntilDone();
-    chassis.moveToPoint( 19.48, -45.59, 1450, {.forwards = false});          // pt11  cm(49.485, -115.801) h=316.2
-    chassis.waitUntilDone();
-    chassis.moveToPoint( 12.74, -38.95,  750);                               // pt12  cm(32.363, -98.922) h=316.5
-    chassis.waitUntilDone();
-    chassis.turnToHeading(0.0, 800);
-    chassis.waitUntilDone();
-    chassis.moveToPoint( 23.62, -57.09, 1200, {.forwards = false});          // pt13  cm(60, -145) h=0
-    chassis.waitUntilDone();
-    chassis.moveToPoint( 23.62, -66.93,  750, {.forwards = false});          // pt14  cm(60, -170) h=0
-    chassis.waitUntilDone();
-    chassis.turnToHeading(180.0, 800);
-    chassis.waitUntilDone();
-    chassis.moveToPoint( 23.62, -51.18, 1000, {.forwards = false});          // pt15  cm(60, -130) h=180
-    chassis.waitUntilDone();
+    // chassis.setPose(0.00, -66.93, 180.0);         
+    
+    // chassis.moveToPoint(  0.00, -55,  700);                               // pt00  cm(0, -170) h=180
+  
+    // chassis.moveToPoint(  0.00, -66.93,  700);                               // pt02  cm(0, -170) h=180
+    // chassis.waitUntilDone();
+    // chassis.moveToPoint(  0.00, -57.09,  750);          // pt03  cm(0, -145) h=90
+    // chassis.waitUntilDone();
+    // chassis.turnToHeading(90.0, 800);
+    // chassis.waitUntilDone();
+    // chassis.moveToPoint(-23.62, -57.09, 1300, {.forwards = false});          // pt04  cm(-60, -145) h=180
+    // chassis.waitUntilDone();
+    // chassis.turnToHeading(180.0, 800);
+    // chassis.waitUntilDone();
+    // chassis.moveToPoint(-23.62, -51.18,  700, {.forwards = false});          // pt05  cm(-60, -130) h=180
+    // chassis.waitUntilDone();
+    // chassis.turnToHeading(0.0, 800);
+    // chassis.waitUntilDone();
+    // chassis.moveToPoint(-23.62, -66.93, 1000, {.forwards = false});          // pt06  cm(-60, -170) h=0
+    // chassis.waitUntilDone();
+    // chassis.turnToHeading(180.0, 800);
+    // chassis.waitUntilDone();
+    // chassis.moveToPoint(-23.62, -51.18, 1000, {.forwards = false});          // pt07  cm(-60, -130) h=180
+    // chassis.waitUntilDone();
+    // chassis.turnToHeading(0.0, 800);
+    // chassis.waitUntilDone();
+    // chassis.moveToPoint(-23.62, -57.09,  700, {.forwards = false});          // pt08  cm(-60, -145) h=0
+    // chassis.waitUntilDone();
+    // chassis.moveToPoint(  0.00, -57.09, 1300);                               // pt09  cm(0, -145) h=0
+    // chassis.waitUntilDone();
+    // chassis.turnToHeading(180.0, 800);
+    // chassis.waitUntilDone();
+    // chassis.moveToPoint(  0.00, -25.59, 1600, {.forwards = false});          // pt10  cm(0, -65) h=180
+    // chassis.waitUntilDone();
+    // chassis.turnToHeading(316.2, 800);
+    // chassis.waitUntilDone();
+    // chassis.moveToPoint( 19.48, -45.59, 1450, {.forwards = false});          // pt11  cm(49.485, -115.801) h=316.2
+    // chassis.waitUntilDone();
+    // chassis.moveToPoint( 12.74, -38.95,  750);                               // pt12  cm(32.363, -98.922) h=316.5
+    // chassis.waitUntilDone();
+    // chassis.turnToHeading(0.0, 800);
+    // chassis.waitUntilDone();
+    // chassis.moveToPoint( 23.62, -57.09, 1200, {.forwards = false});          // pt13  cm(60, -145) h=0
+    // chassis.waitUntilDone();
+    // chassis.moveToPoint( 23.62, -66.93,  750, {.forwards = false});          // pt14  cm(60, -170) h=0
+    // chassis.waitUntilDone();
+    // chassis.turnToHeading(180.0, 800);
+    // chassis.waitUntilDone();
+    // chassis.moveToPoint( 23.62, -51.18, 1000, {.forwards = false});          // pt15  cm(60, -130) h=180
+    // chassis.waitUntilDone();
 
 
 
