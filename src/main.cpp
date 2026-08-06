@@ -2,6 +2,7 @@
 #include "lemlib/api.hpp" // IWYU pragma: keep
 #include "pros/misc.h"
 #include "pros/misc.hpp"
+#include "pros/motors.h"
 #include "pros/rotation.hpp"
 
 using namespace pros; // IWYU pragma: keep
@@ -12,7 +13,7 @@ pros::MotorGroup liftMotor({-16, 20});
 pros::Motor intakeMotors({5});
 pros::Motor chainbar({18});
 pros::Controller master(pros::E_CONTROLLER_MASTER); // create a controller object for the master controller
-pros::adi::Pneumatics intake_piston('A', false, true); // create a piston object for the pneumatic piston on port 1
+pros::adi::Pneumatics intake_piston('D', false, true); // create a piston object for the pneumatic piston on port 1
 pros::Rotation chainbar_encoder(17);
 // drivetrain settings
 lemlib::Drivetrain drivetrain(&left_motors, // left motor group
@@ -28,9 +29,9 @@ pros::Imu imu(14);
 pros::Rotation verticalrotation_sensor(-12);
 pros::Rotation horizontalrotation_sensor(-13);
 
-lemlib::TrackingWheel horizontal_tracking_wheel(&horizontalrotation_sensor, lemlib::Omniwheel::NEW_2, 2);
+lemlib::TrackingWheel horizontal_tracking_wheel(&horizontalrotation_sensor, 2.0, 2);
 // vertical tracking wheel
-lemlib::TrackingWheel vertical_tracking_wheel(&verticalrotation_sensor, lemlib::Omniwheel::NEW_2, 0);
+lemlib::TrackingWheel vertical_tracking_wheel(&verticalrotation_sensor, 2.0, 0);
 
 
 lemlib::OdomSensors sensors(&vertical_tracking_wheel, // vertical tracking wheel 1, set to null
@@ -62,7 +63,7 @@ lemlib::OdomSensors sensors(&vertical_tracking_wheel, // vertical tracking wheel
 
 lemlib::ControllerSettings lateral_controller(6, // proportional gain (kP)
                                               0, // integral gain (kI)
-                                              4.8, // derivative gain (kD)
+                                              15, // derivative gain (kD)
                                               0, // anti windup
                                               0, // small error range, in inches
                                               0, // small error range timeout, in milliseconds
@@ -85,7 +86,7 @@ lemlib::ControllerSettings lateral_controller(6, // proportional gain (kP)
 
 lemlib::ControllerSettings angular_controller(1.9, // proportional gain (kP)
                                               0, // integral gain (kI)
-                                              11.5, // derivative gain (kD)
+                                              12.2, // derivative gain (kD)
                                               3, // anti windup
                                               1, // small error range, in inches
                                               100, // small error range timeout, in milliseconds
@@ -105,7 +106,7 @@ lemlib::Chassis chassis(drivetrain, // drivetrain settings
 // using a PID loop. Runs as its own pros::Task, so calling this function does
 // not block the caller — use it as a macro (e.g. on a button press) to send
 // the chainbar to a preset position while the rest of opcontrol keeps running.
-void chainbarFunction(int targetPosition) {
+void chainbarFunction(int targetPosition, int timeout = 2000) {
     static pros::Task* chainbarTask = nullptr;
 
     // cancel any chainbar PID task already in progress so only one loop
@@ -116,10 +117,10 @@ void chainbarFunction(int targetPosition) {
         chainbarTask = nullptr;
     }
 
-    chainbarTask = new pros::Task([targetPosition]() {
+    chainbarTask = new pros::Task([targetPosition, timeout]() {
         double kP = 2;  // Proportional gain, adjust as necessary
         double kI = 0.0;  // Integral gain, adjust as necessary
-        double kD = 50;  // Derivative gain, adjust as necessary
+        double kD = 60;  // Derivative gain, adjust as necessary
 
         double error = 0;
         double previousError = 0;
@@ -129,6 +130,7 @@ void chainbarFunction(int targetPosition) {
         const double errorThreshold = 1000;  // centidegrees (~0.2 degrees) considered "at target"
         const int settleTime = 100;        // ms error must stay within threshold before exiting
         int timeWithinThreshold = 0;
+        const uint32_t startTime = pros::millis();  // real timestamp, so the timeout tracks actual elapsed time
 
         while (true) {
             error = targetPosition - chainbar_encoder.get_position();
@@ -155,6 +157,10 @@ void chainbarFunction(int targetPosition) {
                 timeWithinThreshold = 0;
             }
 
+            // give up and exit once the timeout is reached, even if never settled,
+            // so a stalled/blocked chainbar can't run the motor forever
+            if (pros::millis() - startTime >= static_cast<uint32_t>(timeout)) break;
+
             pros::delay(10);  // small delay to prevent CPU overload
         }
 
@@ -163,7 +169,9 @@ void chainbarFunction(int targetPosition) {
 }
 // initialize function. Runs on program startup
 void initialize() {
+    intake_piston.set_value(false);
     pros::lcd::initialize(); // initialize brain screen
+    chainbar_encoder.reset_position(); // zero the chainbar encoder wherever it is at power-on
     chassis.calibrate(); // calibrate sensors
     // print position to brain screen
     pros::Task screen_task([&]() {
@@ -248,66 +256,34 @@ void autonomous() {
     
     // // chassis.turnToHeading(270, 1000);
     // // chassis.moveToPoint(0, -67, 1000);
-
-    chassis.setPose(0, 0, 0);
-    chassis.turnToHeading(90, 10000);
-    // chassis.moveToPoint(0, 24, 1000);
-
+   
+    chassis.setPose(-62, 0, 270.0);  
     
-    // chassis.setPose(0.00, -66.93, 180.0);         
-    
-    // chassis.moveToPoint(  0.00, -55,  700);                               // pt00  cm(0, -170) h=180
-  
-    // chassis.moveToPoint(  0.00, -66.93,  700);                               // pt02  cm(0, -170) h=180
-    // chassis.waitUntilDone();
-    // chassis.moveToPoint(  0.00, -57.09,  750);          // pt03  cm(0, -145) h=90
-    // chassis.waitUntilDone();
-    // chassis.turnToHeading(90.0, 800);
-    // chassis.waitUntilDone();
-    // chassis.moveToPoint(-23.62, -57.09, 1300, {.forwards = false});          // pt04  cm(-60, -145) h=180
-    // chassis.waitUntilDone();
-    // chassis.turnToHeading(180.0, 800);
-    // chassis.waitUntilDone();
-    // chassis.moveToPoint(-23.62, -51.18,  700, {.forwards = false});          // pt05  cm(-60, -130) h=180
-    // chassis.waitUntilDone();
-    // chassis.turnToHeading(0.0, 800);
-    // chassis.waitUntilDone();
-    // chassis.moveToPoint(-23.62, -66.93, 1000, {.forwards = false});          // pt06  cm(-60, -170) h=0
-    // chassis.waitUntilDone();
-    // chassis.turnToHeading(180.0, 800);
-    // chassis.waitUntilDone();
-    // chassis.moveToPoint(-23.62, -51.18, 1000, {.forwards = false});          // pt07  cm(-60, -130) h=180
-    // chassis.waitUntilDone();
-    // chassis.turnToHeading(0.0, 800);
-    // chassis.waitUntilDone();
-    // chassis.moveToPoint(-23.62, -57.09,  700, {.forwards = false});          // pt08  cm(-60, -145) h=0
-    // chassis.waitUntilDone();
-    // chassis.moveToPoint(  0.00, -57.09, 1300);                               // pt09  cm(0, -145) h=0
-    // chassis.waitUntilDone();
-    // chassis.turnToHeading(180.0, 800);
-    // chassis.waitUntilDone();
-    // chassis.moveToPoint(  0.00, -25.59, 1600, {.forwards = false});          // pt10  cm(0, -65) h=180
-    // chassis.waitUntilDone();
-    // chassis.turnToHeading(316.2, 800);
-    // chassis.waitUntilDone();
-    // chassis.moveToPoint( 19.48, -45.59, 1450, {.forwards = false});          // pt11  cm(49.485, -115.801) h=316.2
-    // chassis.waitUntilDone();
-    // chassis.moveToPoint( 12.74, -38.95,  750);                               // pt12  cm(32.363, -98.922) h=316.5
-    // chassis.waitUntilDone();
-    // chassis.turnToHeading(0.0, 800);
-    // chassis.waitUntilDone();
-    // chassis.moveToPoint( 23.62, -57.09, 1200, {.forwards = false});          // pt13  cm(60, -145) h=0
-    // chassis.waitUntilDone();
-    // chassis.moveToPoint( 23.62, -66.93,  750, {.forwards = false});          // pt14  cm(60, -170) h=0
-    // chassis.waitUntilDone();
-    // chassis.turnToHeading(180.0, 800);
-    // chassis.waitUntilDone();
-    // chassis.moveToPoint( 23.62, -51.18, 1000, {.forwards = false});          // pt15  cm(60, -130) h=180
-    // chassis.waitUntilDone();
+     //chainbar to score position
+    intake_piston.set_value(false);
+    chassis.moveToPoint(-60,   0,  400, {.forwards = false}, false);          
+    chassis.moveToPoint(-68,   0,  400, {.forwards = true, .minSpeed = 100}, false);          
+    chassis.moveToPoint(-60,   0,  400, {.forwards = false}, false);
+    chassis.moveToPoint(-68,   0,  400, {.forwards = true, .minSpeed = 100}, false);         
+    chassis.moveToPoint(-58,   0,  400, {.forwards = false}, false);   
+    //roller done
+    chassis.turnToHeading(0, 600, {}, false);
+    chassis.moveToPoint(-58,   -17,  1200, {.forwards = false}, true);
+    chassis.waitUntil(7);
+    chainbarFunction(-93000, 1500);
+    chassis.waitUntilDone();
+    chassis.turnToHeading(300, 600, {}, false);
+    chassis.moveToPoint(-56.8,   -17.8,  1200, {.forwards = false}, true);
+    delay(500);
+    intake_piston.set_value(true);
+    chainbarFunction(-70000, 800);
+    delay(500);
+    chassis.turnToHeading(50, 600, {}, false);
+    chainbarFunction(-92000, 800);
+    delay(600);
+    intake_piston.set_value(false);
+    delay(500);
 
-
-
-    
 
 
 }
@@ -360,7 +336,7 @@ void opcontrol() {
         //     chainbar.brake();
         // }
 
-    chainbar.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+    chainbar.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 
     while (true) {
         int dir = master.get_analog(ANALOG_LEFT_Y);
@@ -396,10 +372,8 @@ void opcontrol() {
         if(master.get_digital_new_press(DIGITAL_A)){
             intake_piston.toggle(); // toggle piston state
         }
-        if (master.get_digital_new_press(DIGITAL_UP)) {
-            chainbar_encoder.reset_position(); // zero the chainbar encoder wherever it is right now
-        }
         if (master.get_digital_new_press(DIGITAL_X)) {
+            intake_piston.set_value(false); // retract piston
             chainbarFunction(-91427); // macro: drive chainbar to preset position
         }
         pros::delay(20);
