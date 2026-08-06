@@ -106,21 +106,33 @@ lemlib::Chassis chassis(drivetrain, // drivetrain settings
 // using a PID loop. Runs as its own pros::Task, so calling this function does
 // not block the caller — use it as a macro (e.g. on a button press) to send
 // the chainbar to a preset position while the rest of opcontrol keeps running.
-void chainbarFunction(int targetPosition, int timeout = 2000) {
+void chainbarFunction(int targetPosition) {
     static pros::Task* chainbarTask = nullptr;
+    static volatile bool stopRequested = false;
+    static volatile bool taskFinished = true;
 
-    // cancel any chainbar PID task already in progress so only one loop
-    // ever drives the motor at a time
+    // ask any chainbar PID task already in progress to stop on its own and
+    // wait briefly for it to actually finish, instead of force-killing it
+    // with remove(). Killing a task while it's mid-way through chainbar.move()
+    // can leave the motor's port lock held forever, hanging every future
+    // call to that motor.
     if (chainbarTask != nullptr) {
-        chainbarTask->remove();
+        stopRequested = true;
+        uint32_t waitStart = pros::millis();
+        while (!taskFinished && pros::millis() - waitStart < 100) {
+            pros::delay(5);
+        }
         delete chainbarTask;
         chainbarTask = nullptr;
     }
 
-    chainbarTask = new pros::Task([targetPosition, timeout]() {
+    stopRequested = false;
+    taskFinished = false;
+
+    chainbarTask = new pros::Task([targetPosition]() {
         double kP = 2;  // Proportional gain, adjust as necessary
         double kI = 0.0;  // Integral gain, adjust as necessary
-        double kD = 60;  // Derivative gain, adjust as necessary
+        double kD = 42;  // Derivative gain, adjust as necessary
 
         double error = 0;
         double previousError = 0;
@@ -128,11 +140,8 @@ void chainbarFunction(int targetPosition, int timeout = 2000) {
         double derivative = 0;
 
         const double errorThreshold = 1000;  // centidegrees (~0.2 degrees) considered "at target"
-        const int settleTime = 100;        // ms error must stay within threshold before exiting
-        int timeWithinThreshold = 0;
-        const uint32_t startTime = pros::millis();  // real timestamp, so the timeout tracks actual elapsed time
 
-        while (true) {
+        while (!stopRequested) {
             error = targetPosition - chainbar_encoder.get_position();
 
             integral += error;
@@ -148,23 +157,14 @@ void chainbarFunction(int targetPosition, int timeout = 2000) {
 
             previousError = error;
 
-            // consider the chainbar "at target" once it's within errorThreshold
-            // for settleTime milliseconds in a row
-            if ((error < 0 ? -error : error) < errorThreshold) {
-                timeWithinThreshold += 10;
-                if (timeWithinThreshold >= settleTime) break;
-            } else {
-                timeWithinThreshold = 0;
-            }
-
-            // give up and exit once the timeout is reached, even if never settled,
-            // so a stalled/blocked chainbar can't run the motor forever
-            if (pros::millis() - startTime >= static_cast<uint32_t>(timeout)) break;
+            // exit as soon as the chainbar is within errorThreshold of the target
+            if ((error < 0 ? -error : error) < errorThreshold) break;
 
             pros::delay(10);  // small delay to prevent CPU overload
         }
 
         chainbar.brake();  // hold the final position
+        taskFinished = true;
     });
 }
 // initialize function. Runs on program startup
@@ -256,33 +256,38 @@ void autonomous() {
     
     // // chassis.turnToHeading(270, 1000);
     // // chassis.moveToPoint(0, -67, 1000);
-   
+   chainbar.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
     chassis.setPose(-62, 0, 270.0);  
     
      //chainbar to score position
     intake_piston.set_value(false);
-    chassis.moveToPoint(-60,   0,  400, {.forwards = false}, false);          
+    chassis.moveToPoint(-59.5,   0,  400, {.forwards = false}, false);          
     chassis.moveToPoint(-68,   0,  400, {.forwards = true, .minSpeed = 100}, false);          
     chassis.moveToPoint(-60,   0,  400, {.forwards = false}, false);
     chassis.moveToPoint(-68,   0,  400, {.forwards = true, .minSpeed = 100}, false);         
     chassis.moveToPoint(-58,   0,  400, {.forwards = false}, false);   
     //roller done
     chassis.turnToHeading(0, 600, {}, false);
-    chassis.moveToPoint(-58,   -17,  1200, {.forwards = false}, true);
-    chassis.waitUntil(7);
-    chainbarFunction(-93000, 1500);
-    chassis.waitUntilDone();
-    chassis.turnToHeading(300, 600, {}, false);
-    chassis.moveToPoint(-56.8,   -17.8,  1200, {.forwards = false}, true);
-    delay(500);
+    chassis.moveToPoint(-58.5,   -17,  1200, {.forwards = false}, false);
+    chainbarFunction(-97000);
+    chassis.turnToHeading(302, 600, {}, false);
+    chassis.moveToPoint(-57.3,   -17.55,  800, {.forwards = false}, false);
+    delay(300);
     intake_piston.set_value(true);
-    chainbarFunction(-70000, 800);
-    delay(500);
-    chassis.turnToHeading(50, 600, {}, false);
-    chainbarFunction(-92000, 800);
+    chainbarFunction(-80000);
+    chassis.moveToPoint(-59,   -16.5,  1200, {.forwards = true}, false);
+    chassis.turnToHeading(42, 600, {}, false);
+    chassis.moveToPoint(-61,   -14.5,  800, {.forwards = false}, false);
+    chainbarFunction(-94000);
     delay(600);
     intake_piston.set_value(false);
     delay(500);
+    chassis.moveToPoint(-59,   -16.5,  1200, {.forwards = true}, false);
+    chassis.turnToHeading(180, 600, {}, false);
+    chassis.moveToPoint(-59,   16.5,  1200, {.forwards = false}, false);
+    
+
+
 
 
 
