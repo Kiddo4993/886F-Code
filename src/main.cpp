@@ -130,9 +130,9 @@ void chainbarFunction(int targetPosition) {
     taskFinished = false;
 
     chainbarTask = new pros::Task([targetPosition]() {
-        double kP = 20;  // Proportional gain, adjust as necessary
+        double kP = 10.0;  // Proportional gain, adjust as necessary
         double kI = 0.0;  // Integral gain, adjust as  necessary
-        double kD = 12;  // Derivative gain, adjust as necessary
+        double kD = 0.0;  // Derivative gain, adjust as necessary
 
         double error = 0;
         double previousError = 0;

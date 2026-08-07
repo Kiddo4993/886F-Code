@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(TOOLCHAIN_BIN=\"/Users/dylanduan/Library/Application Support/Code/User/globalStorage/sigbots.pros/install/pros-toolchain-macos/bin\" *)",
-      "Read(//Users/dylanduan/Library/Application Support/Code/User/globalStorage/sigbots.pros/install/pros-toolchain-macos/bin/**)"
-    ]
-  }
-}
