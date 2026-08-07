@@ -130,9 +130,9 @@ void chainbarFunction(int targetPosition) {
     taskFinished = false;
 
     chainbarTask = new pros::Task([targetPosition]() {
-        double kP = 2;  // Proportional gain, adjust as necessary
-        double kI = 0.0;  // Integral gain, adjust as necessary
-        double kD = 42;  // Derivative gain, adjust as necessary
+        double kP = 20;  // Proportional gain, adjust as necessary
+        double kI = 0.0;  // Integral gain, adjust as  necessary
+        double kD = 12;  // Derivative gain, adjust as necessary
 
         double error = 0;
         double previousError = 0;
@@ -223,6 +223,52 @@ void on_center_button() {
  * the VEX Competition Switch, following either autonomous or opcontrol. When
  * the robot is enabled, this task will exit.
  */
+void autoskills() {
+
+    chainbar.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+
+    chassis.setPose(-62, 0, 270.0); 
+    // Score Position 
+    intake_piston.set_value(false);
+    chassis.moveToPoint(-59.5,   0,  400, {.forwards = false}, false);          
+    chassis.moveToPoint(-68,   0,  400, {.forwards = true, .minSpeed = 100}, false);          
+    chassis.moveToPoint(-60,   0,  400, {.forwards = false}, false);
+    chassis.moveToPoint(-68,   0,  400, {.forwards = true, .minSpeed = 100}, false);         
+    chassis.moveToPoint(-58,   0,  400, {.forwards = false}, false);   
+    //roller done
+
+    chassis.turnToHeading(315, 600);
+
+    chassis.turnToHeading(0, 600, {}, false);
+    chassis.moveToPoint(-58.5,   -17,  1200, {.forwards = false}, false);
+    chainbarFunction(-97000);
+    chassis.turnToHeading(302, 600, {}, false);
+    chassis.moveToPoint(-57.3,   -17.55,  800, {.forwards = false}, false);
+    delay(300);
+    intake_piston.set_value(true);
+    chainbarFunction(-80000);
+
+    chassis.turnToHeading( 0,  600);
+    chassis.moveToPoint( -62.3,  -49.23,  800);
+    // go to match load
+
+    chassis.turnToHeading( 30,  600);
+    chassis.moveToPoint( -52,  -34,  600);
+    // chassis.turnToHeading()
+
+
+
+
+
+
+
+
+
+
+
+
+}
+
 void disabled() {}
 
 /**
@@ -274,6 +320,7 @@ void autonomous() {
     chassis.moveToPoint(-57.3,   -17.55,  800, {.forwards = false}, false);
     delay(300);
     intake_piston.set_value(true);
+    // score first pin
     chainbarFunction(-80000);
     chassis.moveToPoint(-59,   -16.5,  1200, {.forwards = true}, false);
     chassis.turnToHeading(42, 600, {}, false);
@@ -283,8 +330,22 @@ void autonomous() {
     intake_piston.set_value(false);
     delay(500);
     chassis.moveToPoint(-59,   -16.5,  1200, {.forwards = true}, false);
+    //got second cone
+
     chassis.turnToHeading(180, 600, {}, false);
+    
     chassis.moveToPoint(-59,   16.5,  1200, {.forwards = false}, false);
+
+    chainbarFunction(-80000);
+    intake_piston.set_value(true);
+
+    // put in second cone 
+
+    chassis.moveToPoint(-59,   16.5,  1200, {.forwards = false}, false);
+
+
+
+
     
 
 
@@ -368,19 +429,28 @@ void opcontrol() {
 
         // Chainbar — separate block, unaffected by any other button
         if (master.get_digital(DIGITAL_B)) {
-            chainbar.move(127);
+            chainbar.move(80);
         } else if (master.get_digital(DIGITAL_Y)) {
-            chainbar.move(-127);
+            chainbar.move(-80);
         } else {
             chainbar.brake();  // actively holds position (HOLD brake mode)
         }
         if(master.get_digital_new_press(DIGITAL_A)){
             intake_piston.toggle(); // toggle piston state
         }
-        if (master.get_digital_new_press(DIGITAL_X)) {
-            intake_piston.set_value(false); // retract piston
-            chainbarFunction(-91427); // macro: drive chainbar to preset position
+        // if (master.get_digital_new_press(DIGITAL_X)) {
+        //     intake_piston.set_value(false); // retract piston
+        //     chainbarFunction(-91427); // macro: drive chainbar to preset position
+        // }
+        if(master.get_digital_new_press(DIGITAL_X)) {
+             
+            chainbarFunction(-90000);
+            intake_piston.set_value(true);
         }
+        // else if(master.get_digital_new_press(DIGITAL_UP)) {
+        //     intake_piston.set_value(true); 
+        //     chainbarFunction(-105600);
+        // }
         pros::delay(20);
 
             
