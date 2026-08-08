@@ -7,13 +7,13 @@
 
 using namespace pros; // IWYU pragma: keep
 
-pros::MotorGroup left_motors({-3, -7, -11}, pros::MotorGearset::blue); 
+pros::MotorGroup left_motors({-3, -2, -11}, pros::MotorGearset::blue); 
 pros::MotorGroup right_motors({4, 6, 19}, pros::MotorGearset::blue); 
 pros::MotorGroup liftMotor({-16, 20});
 pros::Motor intakeMotors({5});
 pros::Motor chainbar({18});
 pros::Controller master(pros::E_CONTROLLER_MASTER); // create a controller object for the master controller
-pros::adi::Pneumatics intake_piston('D', false, true); // create a piston object for the pneumatic piston on port 1
+pros::adi::Pneumatics intake_piston('E', false, true); // create a piston object for the pneumatic piston on port 1
 pros::Rotation chainbar_encoder(17);
 // drivetrain settings
 lemlib::Drivetrain drivetrain(&left_motors, // left motor group
@@ -130,9 +130,9 @@ void chainbarFunction(int targetPosition) {
     taskFinished = false;
 
     chainbarTask = new pros::Task([targetPosition]() {
-        double kP = 10.0;  // Proportional gain, adjust as necessary
+        double kP = 8;  // Proportional gain, adjust as necessary
         double kI = 0.0;  // Integral gain, adjust as  necessary
-        double kD = 0.0;  // Derivative gain, adjust as necessary
+        double kD = 3;  // Derivative gain, adjust as necessary
 
         double error = 0;
         double previousError = 0;
@@ -150,8 +150,8 @@ void chainbarFunction(int targetPosition) {
             double output = (kP * error) + (kI * integral) + (kD * derivative);
 
             // clamp output to valid motor voltage range
-            if (output > 127) output = 127;
-            if (output < -127) output = -127;
+            if (output >70) output = 70;
+            if (output < -70) output = -70;
 
             chainbar.move(output);
 
@@ -295,53 +295,89 @@ void competition_initialize() {}
  */
 void autonomous() {
 
-    // chassis.setPose(0, -59.5, 229.58);
-    // chassis.moveToPoint(0, -63,800);
+    //Right side 
+    // chainbar.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+    // chassis.setPose(-62, 0, 270.0);  
+    
+    //  //chainbar to score position
+    // intake_piston.set_value(false);
+    // chassis.moveToPoint(-59.5,   0,  400, {.forwards = false}, false);          
+    // chassis.moveToPoint(-68,   0,  400, {.forwards = true, .minSpeed = 100}, false);          
+    // chassis.moveToPoint(-60,   0,  400, {.forwards = false}, false);
+    // chassis.moveToPoint(-68,   0,  400, {.forwards = true, .minSpeed = 100}, false);         
+    // chassis.moveToPoint(-58,   0,  400, {.forwards = false}, false);   
+    // //roller done
+    // chassis.turnToHeading(0, 600, {}, false);
+    // chassis.moveToPoint(-58.5,   -17,  1200, {.forwards = false}, false);
+    // chainbarFunction(-97000);
+    // chassis.turnToHeading(302, 600, {}, false);
+    // chassis.moveToPoint(-57.3,   -17.55,  800, {.forwards = false}, false);
+    // delay(300);
+    // intake_piston.set_value(true);
+    // // score first pin
+    // chainbarFunction(-80000);
+    // chassis.moveToPoint(-59,   -16.5,  1200, {.forwards = true}, false);
+    // chassis.turnToHeading(42, 600, {}, false);
+    // chassis.moveToPoint(-61,   -14.5,  800, {.forwards = false}, false);
+    // chainbarFunction(-94000);
+    // delay(600);
+    // intake_piston.set_value(false);
+    // delay(500);
+    // chassis.moveToPoint(-59,   -16.5,  1200, {.forwards = true}, false);
+    // //got second cone
 
-    // // chassis.setPose(0, 0, 0);
+    // chassis.turnToHeading(180, 600, {}, false);
     
-    // // chassis.turnToHeading(270, 1000);
-    // // chassis.moveToPoint(0, -67, 1000);
-   chainbar.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-    chassis.setPose(-62, 0, 270.0);  
+    // chassis.moveToPoint(-59,   16.5,  1200, {.forwards = false}, false);
+
+    // chainbarFunction(-80000);
+    // intake_piston.set_value(true);
+
+    // // put in second cone 
+
+    // chassis.moveToPoint(-59,   16.5,  1200, {.forwards = false}, false);
+
+    //left --------------------------------------------
+
+    chainbar.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+    chassis.setPose(0, -62, 180);  
     
-     //chainbar to score position
     intake_piston.set_value(false);
-    chassis.moveToPoint(-59.5,   0,  400, {.forwards = false}, false);          
-    chassis.moveToPoint(-68,   0,  400, {.forwards = true, .minSpeed = 100}, false);          
-    chassis.moveToPoint(-60,   0,  400, {.forwards = false}, false);
-    chassis.moveToPoint(-68,   0,  400, {.forwards = true, .minSpeed = 100}, false);         
-    chassis.moveToPoint(-58,   0,  400, {.forwards = false}, false);   
-    //roller done
-    chassis.turnToHeading(0, 600, {}, false);
-    chassis.moveToPoint(-58.5,   -17,  1200, {.forwards = false}, false);
-    chainbarFunction(-97000);
-    chassis.turnToHeading(302, 600, {}, false);
-    chassis.moveToPoint(-57.3,   -17.55,  800, {.forwards = false}, false);
+    chassis.moveToPoint(0,   -58,  500, {.forwards = false}, false);          
+    chassis.moveToPoint(0,   -64,  500, {.forwards = true, .minSpeed = 60}, false);          
+    chassis.moveToPoint(0,   -58,  500, {.forwards = false}, false);
+    chassis.moveToPoint(0,   -64,  500, {.forwards = true, .minSpeed = 60}, false);         
+    chassis.moveToPoint(0,   -50,  1000, {.forwards = false}, false);   
+    chainbarFunction(-2500);
+    chassis.turnToHeading(270, 600, {}, false);
+    chassis.moveToPoint(-18.2,   -50,  900, {.forwards = true}, false);
+    delay(300);   
+    intake_piston.set_value(true);
+    
     delay(300);
-    intake_piston.set_value(true);
-    // score first pin
-    chainbarFunction(-80000);
-    chassis.moveToPoint(-59,   -16.5,  1200, {.forwards = true}, false);
-    chassis.turnToHeading(42, 600, {}, false);
-    chassis.moveToPoint(-61,   -14.5,  800, {.forwards = false}, false);
-    chainbarFunction(-94000);
-    delay(600);
+    chainbarFunction(0);
+    chassis.moveToPoint(-8,   -51,  900, {.forwards = false}, false); 
+    chassis.turnToHeading(325, 600, {}, false);
+    chassis.moveToPoint(-24.5,   -27,  1700, {.forwards = true, .maxSpeed = 30}, true); 
+    chassis.waitUntil(20);
     intake_piston.set_value(false);
-    delay(500);
-    chassis.moveToPoint(-59,   -16.5,  1200, {.forwards = true}, false);
-    //got second cone
-
-    chassis.turnToHeading(180, 600, {}, false);
-    
-    chassis.moveToPoint(-59,   16.5,  1200, {.forwards = false}, false);
-
-    chainbarFunction(-80000);
+    chassis.waitUntilDone();
+    chassis.turnToHeading(0, 600, {}, false);
+    chainbarFunction(-15000);
+    chassis.moveToPoint(-24,   -45,  1500, {.forwards = false}, false); 
+    chainbarFunction(-108000);
+    delay(2000);
     intake_piston.set_value(true);
+     chainbarFunction(-8000);
 
-    // put in second cone 
 
-    chassis.moveToPoint(-59,   16.5,  1200, {.forwards = false}, false);
+
+
+
+
+
+
+
 
 
 
@@ -402,7 +438,7 @@ void opcontrol() {
         //     chainbar.brake();
         // }
 
-    chainbar.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+    chainbar.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 
     while (true) {
         int dir = master.get_analog(ANALOG_LEFT_Y);
@@ -411,42 +447,35 @@ void opcontrol() {
         right_motors.move(dir - turn);
 
         // Lift / intake — independent of chainbar now
-        if (master.get_digital(DIGITAL_R1)) {
+        if (master.get_digital(DIGITAL_L1)) {
             liftMotor.move(127);
-        } else if (master.get_digital(DIGITAL_R2)) {
+        } else if (master.get_digital(DIGITAL_L2)) {
             liftMotor.move(-127);
         } else {
             liftMotor.move(0);
         }
 
-        if (master.get_digital(DIGITAL_L1)) {
-            intakeMotors.move(127);
-        } else if (master.get_digital(DIGITAL_L2)) {
-            intakeMotors.move(-127);
+        if (master.get_digital(DIGITAL_R2)) {
+            chainbar.move(75);
+        } else if (master.get_digital(DIGITAL_R1)) {
+            chainbar.move(-75);
         } else {
-            intakeMotors.move(0);
+            chainbar.brake();
         }
 
-        // Chainbar — separate block, unaffected by any other button
-        if (master.get_digital(DIGITAL_B)) {
-            chainbar.move(80);
-        } else if (master.get_digital(DIGITAL_Y)) {
-            chainbar.move(-80);
-        } else {
-            chainbar.brake();  // actively holds position (HOLD brake mode)
-        }
-        if(master.get_digital_new_press(DIGITAL_A)){
+        // Chainbar — separate block, unaffected by any other butto
+        if(master.get_digital_new_press(DIGITAL_B)){
             intake_piston.toggle(); // toggle piston state
         }
         // if (master.get_digital_new_press(DIGITAL_X)) {
         //     intake_piston.set_value(false); // retract piston
         //     chainbarFunction(-91427); // macro: drive chainbar to preset position
         // }
-        if(master.get_digital_new_press(DIGITAL_X)) {
+        // if(master.get_digital_new_press(DIGITAL_DOWN)) {
              
-            chainbarFunction(-90000);
-            intake_piston.set_value(true);
-        }
+        //     chainbarFunction(-90000);
+        //     intake_piston.set_value(true);
+        // }
         // else if(master.get_digital_new_press(DIGITAL_UP)) {
         //     intake_piston.set_value(true); 
         //     chainbarFunction(-105600);
