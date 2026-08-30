@@ -7,14 +7,14 @@
 
 using namespace pros; // IWYU pragma: keep
 
-pros::MotorGroup left_motors({-3, -2, -11}, pros::MotorGearset::blue); 
-pros::MotorGroup right_motors({4, 6, 19}, pros::MotorGearset::blue); 
-pros::MotorGroup liftMotor({-16, 20});
-pros::Motor intakeMotors({5});
-pros::Motor chainbar({18});
+pros::MotorGroup left_motors({1, 9, 4}, pros::MotorGearset::blue); 
+pros::MotorGroup right_motors({-3, -5, -10}, pros::MotorGearset::blue); 
+pros::MotorGroup liftMotor({-11, 20});
+// pros::Motor intakeMotors({});
+// pros::Motor chainbar({});
 pros::Controller master(pros::E_CONTROLLER_MASTER); // create a controller object for the master controller
 pros::adi::Pneumatics intake_piston('E', false, true); // create a piston object for the pneumatic piston on port 1
-pros::Rotation chainbar_encoder(17);
+// pros::Rotation chainbar_encoder(17);
 // drivetrain settings
 lemlib::Drivetrain drivetrain(&left_motors, // left motor group
                               &right_motors, // right motor group
@@ -25,9 +25,9 @@ lemlib::Drivetrain drivetrain(&left_motors, // left motor group
 );
 
 
-pros::Imu imu(14);
-pros::Rotation verticalrotation_sensor(-12);
-pros::Rotation horizontalrotation_sensor(-13);
+pros::Imu imu(2);
+pros::Rotation verticalrotation_sensor(-6);
+pros::Rotation horizontalrotation_sensor(-7);
 
 lemlib::TrackingWheel horizontal_tracking_wheel(&horizontalrotation_sensor, 2.0, 2);
 // vertical tracking wheel
@@ -106,72 +106,72 @@ lemlib::Chassis chassis(drivetrain, // drivetrain settings
 // using a PID loop. Runs as its own pros::Task, so calling this function does
 // not block the caller — use it as a macro (e.g. on a button press) to send
 // the chainbar to a preset position while the rest of opcontrol keeps running.
-void chainbarFunction(int targetPosition) {
-    static pros::Task* chainbarTask = nullptr;
-    static volatile bool stopRequested = false;
-    static volatile bool taskFinished = true;
+// void chainbarFunction(int targetPosition) {
+//     static pros::Task* chainbarTask = nullptr;
+//     static volatile bool stopRequested = false;
+//     static volatile bool taskFinished = true;
 
-    // ask any chainbar PID task already in progress to stop on its own and
-    // wait briefly for it to actually finish, instead of force-killing it
-    // with remove(). Killing a task while it's mid-way through chainbar.move()
-    // can leave the motor's port lock held forever, hanging every future
-    // call to that motor.
-    if (chainbarTask != nullptr) {
-        stopRequested = true;
-        uint32_t waitStart = pros::millis();
-        while (!taskFinished && pros::millis() - waitStart < 100) {
-            pros::delay(5);
-        }
-        delete chainbarTask;
-        chainbarTask = nullptr;
-    }
+//     // ask any chainbar PID task already in progress to stop on its own and
+//     // wait briefly for it to actually finish, instead of force-killing it
+//     // with remove(). Killing a task while it's mid-way through chainbar.move()
+//     // can leave the motor's port lock held forever, hanging every future
+//     // call to that motor.
+//     if (chainbarTask != nullptr) {
+//         stopRequested = true;
+//         uint32_t waitStart = pros::millis();
+//         while (!taskFinished && pros::millis() - waitStart < 100) {
+//             pros::delay(5);
+//         }
+//         delete chainbarTask;
+//         chainbarTask = nullptr;
+//     }
 
-    stopRequested = false;
-    taskFinished = false;
+//     stopRequested = false;
+//     taskFinished = false;
 
-    chainbarTask = new pros::Task([targetPosition]() {
-        double kP = 8;  // Proportional gain, adjust as necessary
-        double kI = 0.0;  // Integral gain, adjust as  necessary
-        double kD = 3;  // Derivative gain, adjust as necessary
+//     chainbarTask = new pros::Task([targetPosition]() {
+//         double kP = 8;  // Proportional gain, adjust as necessary
+//         double kI = 0.0;  // Integral gain, adjust as  necessary
+//         double kD = 3;  // Derivative gain, adjust as necessary
 
-        double error = 0;
-        double previousError = 0;
-        double integral = 0;
-        double derivative = 0;
+//         double error = 0;
+//         double previousError = 0;
+//         double integral = 0;
+//         double derivative = 0;
 
-        const double errorThreshold = 1000;  // centidegrees (~0.2 degrees) considered "at target"
+//         const double errorThreshold = 1000;  // centidegrees (~0.2 degrees) considered "at target"
 
-        while (!stopRequested) {
-            error = targetPosition - chainbar_encoder.get_position();
+//         while (!stopRequested) {
+//             error = targetPosition - chainbar_encoder.get_position();
 
-            integral += error;
-            derivative = error - previousError;
+//             integral += error;
+//             derivative = error - previousError;
 
-            double output = (kP * error) + (kI * integral) + (kD * derivative);
+//             double output = (kP * error) + (kI * integral) + (kD * derivative);
 
-            // clamp output to valid motor voltage range
-            if (output >70) output = 70;
-            if (output < -70) output = -70;
+//             // clamp output to valid motor voltage range
+//             if (output >70) output = 70;
+//             if (output < -70) output = -70;
 
-            chainbar.move(output);
+//             chainbar.move(output);
 
-            previousError = error;
+//             previousError = error;
 
-            // exit as soon as the chainbar is within errorThreshold of the target
-            if ((error < 0 ? -error : error) < errorThreshold) break;
+//             // exit as soon as the chainbar is within errorThreshold of the target
+//             if ((error < 0 ? -error : error) < errorThreshold) break;
 
-            pros::delay(10);  // small delay to prevent CPU overload
-        }
+//             pros::delay(10);  // small delay to prevent CPU overload
+//         }
 
-        chainbar.brake();  // hold the final position
-        taskFinished = true;
-    });
-}
-// initialize function. Runs on program startup
+//         chainbar.brake();  // hold the final position
+//         taskFinished = true;
+//     });
+// }
+// // initialize function. Runs on program startup
 void initialize() {
     intake_piston.set_value(false);
     pros::lcd::initialize(); // initialize brain screen
-    chainbar_encoder.reset_position(); // zero the chainbar encoder wherever it is at power-on
+    // chainbar_encoder.reset_position(); // zero the chainbar encoder wherever it is at power-on
     chassis.calibrate(); // calibrate sensors
     // print position to brain screen
     pros::Task screen_task([&]() {
@@ -180,7 +180,7 @@ void initialize() {
             pros::lcd::print(0, "X: %f", chassis.getPose().x); // x
             pros::lcd::print(1, "Y: %f", chassis.getPose().y); // y
             pros::lcd::print(2, "Theta: %f", chassis.getPose().theta); // heading
-            pros::lcd::print(3, "Chainbar: %d", chainbar_encoder.get_position()); // chainbar position, in encoder ticks (centidegrees)
+            // pros::lcd::print(3, "Chainbar: %d", chainbar_encoder.get_position()); // chainbar position, in encoder ticks (centidegrees)
             // delay to save resources
             pros::delay(100);
         }
@@ -225,36 +225,41 @@ void on_center_button() {
  */
 void autoskills() {
 
-    chainbar.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+    // chainbar.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+    // chassis.setPose(0, -62, 180);  
+    
+    // intake_piston.set_value(false);
+    // chassis.moveToPoint(0,   -58,  500, {.forwards = false}, false);          
+    // chassis.moveToPoint(0,   -64,  500, {.forwards = true, .minSpeed = 60}, false);          
+    // chassis.moveToPoint(0,   -58,  500, {.forwards = false}, false);
+    // chassis.moveToPoint(0,   -64,  500, {.forwards = true, .minSpeed = 60}, false);         
+    // chassis.moveToPoint(0,   -50,  1000, {.forwards = false}, false);   
+    // chainbarFunction(-2500);
+    // chassis.turnToHeading(270, 600, {}, false);
+    // chassis.moveToPoint(-18.2,   -50,  900, {.forwards = true}, false);
+    // chainbarFunction(0);
+    // delay(300);
+    // intake_piston.set_value(true);
+    
+    // delay(300);
+    // chainbarFunction(0);
+    // chassis.moveToPoint(-8,   -51,  900, {.forwards = false}, false); 
+    // chassis.turnToHeading(325, 600, {}, false);
+    // chassis.moveToPoint(-24,   -27,  1700, {.forwards = true, .maxSpeed = 30}, true); 
+    // chassis.waitUntil(20);
+    // intake_piston.set_value(false);
+    // chassis.waitUntilDone();
+    // chassis.turnToHeading(0, 600, {}, false);
+    // chainbarFunction(-15000);
+    // chassis.moveToPoint(-24,   -45,  1500, {.forwards = false}, false); 
+    // chainbarFunction(-108000);
+    // delay(2000);
+    // intake_piston.set_value(true);
+    //  chainbarFunction(-8000);
 
-    chassis.setPose(-62, 0, 270.0); 
-    // Score Position 
-    intake_piston.set_value(false);
-    chassis.moveToPoint(-59.5,   0,  400, {.forwards = false}, false);          
-    chassis.moveToPoint(-68,   0,  400, {.forwards = true, .minSpeed = 100}, false);          
-    chassis.moveToPoint(-60,   0,  400, {.forwards = false}, false);
-    chassis.moveToPoint(-68,   0,  400, {.forwards = true, .minSpeed = 100}, false);         
-    chassis.moveToPoint(-58,   0,  400, {.forwards = false}, false);   
-    //roller done
+    //  chassis.turnToHeading(25, 600);
+    //  chassis.moveToPoint(0, 0, 1000, {.forwards = true}, false);
 
-    chassis.turnToHeading(315, 600);
-
-    chassis.turnToHeading(0, 600, {}, false);
-    chassis.moveToPoint(-58.5,   -17,  1200, {.forwards = false}, false);
-    chainbarFunction(-97000);
-    chassis.turnToHeading(302, 600, {}, false);
-    chassis.moveToPoint(-57.3,   -17.55,  800, {.forwards = false}, false);
-    delay(300);
-    intake_piston.set_value(true);
-    chainbarFunction(-80000);
-
-    chassis.turnToHeading( 0,  600);
-    chassis.moveToPoint( -62.3,  -49.23,  800);
-    // go to match load
-
-    chassis.turnToHeading( 30,  600);
-    chassis.moveToPoint( -52,  -34,  600);
-    // chassis.turnToHeading()
 
 
 
@@ -339,38 +344,39 @@ void autonomous() {
 
     //left --------------------------------------------
 
-    chainbar.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-    chassis.setPose(0, -62, 180);  
+    // chainbar.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+    // chassis.setPose(0, -62, 180);  
     
-    intake_piston.set_value(false);
-    chassis.moveToPoint(0,   -58,  500, {.forwards = false}, false);          
-    chassis.moveToPoint(0,   -64,  500, {.forwards = true, .minSpeed = 60}, false);          
-    chassis.moveToPoint(0,   -58,  500, {.forwards = false}, false);
-    chassis.moveToPoint(0,   -64,  500, {.forwards = true, .minSpeed = 60}, false);         
-    chassis.moveToPoint(0,   -50,  1000, {.forwards = false}, false);   
-    chainbarFunction(-2500);
-    chassis.turnToHeading(270, 600, {}, false);
-    chassis.moveToPoint(-18.2,   -50,  900, {.forwards = true}, false);
-    delay(300);   
-    intake_piston.set_value(true);
+    // intake_piston.set_value(false);
+    // chassis.moveToPoint(0,   -58,  500, {.forwards = false}, false);          
+    // chassis.moveToPoint(0,   -64,  500, {.forwards = true, .minSpeed = 60}, false);          
+    // chassis.moveToPoint(0,   -58,  500, {.forwards = false}, false);
+    // chassis.moveToPoint(0,   -64,  500, {.forwards = true, .minSpeed = 60}, false);         
+    // chassis.moveToPoint(0,   -49.7,  1000, {.forwards = false}, false);   
+    // chainbarFunction(-2500);
+    // chassis.turnToHeading(271, 600, {}, false);
+    // chassis.moveToPoint(-18.2,   -49.7,  900, {.forwards = true}, false);
+    // chainbarFunction(0);
+    // delay(300);
+    // intake_piston.set_value(true);
     
-    delay(300);
-    chainbarFunction(0);
-    chassis.moveToPoint(-8,   -51,  900, {.forwards = false}, false); 
-    chassis.turnToHeading(325, 600, {}, false);
-    chassis.moveToPoint(-24.5,   -27,  1700, {.forwards = true, .maxSpeed = 30}, true); 
-    chassis.waitUntil(20);
-    intake_piston.set_value(false);
-    chassis.waitUntilDone();
-    chassis.turnToHeading(0, 600, {}, false);
-    chainbarFunction(-15000);
-    chassis.moveToPoint(-24,   -45,  1500, {.forwards = false}, false); 
-    chainbarFunction(-108000);
-    delay(2000);
-    intake_piston.set_value(true);
-     chainbarFunction(-8000);
+    // delay(300);
+    // chainbarFunction(0);
+    // chassis.moveToPoint(-8,   -51,  900, {.forwards = false}, false); 
+    // chassis.turnToHeading(323, 600, {}, false);
+    // chassis.moveToPoint(-24.5,   -27,  1900, {.forwards = true, .maxSpeed = 30}, true); 
+    // chassis.waitUntil(20.9);
+    // intake_piston.set_value(false);
+    // chassis.waitUntilDone();
+    // chassis.turnToHeading(0, 600, {}, false);
+    // chainbarFunction(-15000);
+    // chassis.moveToPoint(-26,   -45,  1500, {.forwards = false}, false); 
+    // chainbarFunction(-108000);
+    // delay(2000);
+    // intake_piston.set_value(true);
+    //  chainbarFunction(-8000);
 
-
+   
 
 
 
@@ -438,7 +444,7 @@ void opcontrol() {
         //     chainbar.brake();
         // }
 
-    chainbar.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+    // chainbar.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 
     while (true) {
         int dir = master.get_analog(ANALOG_LEFT_Y);
@@ -455,13 +461,13 @@ void opcontrol() {
             liftMotor.move(0);
         }
 
-        if (master.get_digital(DIGITAL_R2)) {
-            chainbar.move(75);
-        } else if (master.get_digital(DIGITAL_R1)) {
-            chainbar.move(-75);
-        } else {
-            chainbar.brake();
-        }
+        // if (master.get_digital(DIGITAL_R2)) {
+        //     chainbar.move(75);
+        // } else if (master.get_digital(DIGITAL_R1)) {
+        //     chainbar.move(-75);
+        // } else {
+        //     chainbar.brake();
+        // }
 
         // Chainbar — separate block, unaffected by any other butto
         if(master.get_digital_new_press(DIGITAL_B)){
@@ -490,5 +496,3 @@ void opcontrol() {
                                     // Run for 130 ms then update
     }
 }
-
-
