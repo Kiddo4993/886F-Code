@@ -9,8 +9,8 @@
 
 using namespace pros; // IWYU pragma: keep
 
-pros::MotorGroup left_motors({1, 9, 4}, pros::MotorGearset::blue); 
-pros::MotorGroup right_motors({-3, -5, -10}, pros::MotorGearset::blue); 
+pros::MotorGroup right_motors({1, 9, 4}, pros::MotorGearset::blue); 
+pros::MotorGroup left_motors({-3, -5, -10}, pros::MotorGearset::blue); 
 pros::MotorGroup liftMotor({-11, 20});
 // pros::Motor intakeMotors({});
 // pros::Motor chainbar({});
@@ -86,18 +86,18 @@ lemlib::ControllerSettings lateral_controller(6, // proportional gain (kP)
 //                                               0 // maximum acceleration (slew)
 // );
 
-lemlib::ControllerSettings angular_controller(0.5, // proportional gain (kP)
+lemlib::ControllerSettings angular_controller(2, // proportional gain (kP)
                                               0, // integral gain (kI)
-                                              20, // derivative gain (kD)
+                                              10, // derivative gain (kD)
                                               3, // anti windup
                                               1, // small error range, in inches
                                               100, // small error range timeout, in milliseconds
                                               3, // large error range, in inches
                                               500, // large error range timeout, in milliseconds
-                                              20 // maximum acceleration (slew)
+                                              0 // maximum acceleration (slew)
 );
 
-lemlib::Chassis chassis(drivetrain, // drivetrain settings
+lemlib::Chassis chassis(drivetrain, // drivetrain settings  
                         lateral_controller, // lateral PID settings
                         angular_controller, // angular PID settings
                         sensors // odometry sensors
@@ -172,6 +172,7 @@ lemlib::Chassis chassis(drivetrain, // drivetrain settings
 // // initialize function. Runs on program startup
 void initialize() {
     intake_piston.set_value(false);
+    liftMotor.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
     pros::lcd::initialize(); // initialize brain screen
     // chainbar_encoder.reset_position(); // zero the chainbar encoder wherever it is at power-on
     chassis.calibrate(); // calibrate sensors
@@ -226,6 +227,11 @@ void on_center_button() {
  * the robot is enabled, this task will exit.
  */
 void autoskills() {
+
+    chassis.setPose(-62, 0, 270.0);  
+
+    chassis.moveToPoint(0, 0, 10000);
+
 
     // chainbar.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
     // chassis.setPose(0, -62, 180);  
@@ -302,34 +308,38 @@ void competition_initialize() {}
  */
 void autonomous() {
 
-   chassis.setPose(0,0,0);
-
-   chassis.turnToHeading(90, 1000);
+    // autoskills();
+//    chassis.setPose(0,0,0);
+//    chassis.moveToPoint(0, 24, 2000);
+//    chassis.turnToHeading(90, 2000);
 
 
 
     // // Right side 
     // // chainbar.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-    // chassis.setPose(-62, 0, 270.0);  
+    chassis.setPose(-62, 0, 270.0);  
     
     //  //chainbar to score position
-    // intake_piston.set_value(false);
-    // chassis.moveToPoint(-59.5,   0,  400, {.forwards = false}, false);          
-    // chassis.moveToPoint(-68,   0,  400, {.forwards = true, .minSpeed = 100}, false);          
-    // chassis.moveToPoint(-60,   0,  400, {.forwards = false}, false);
-    // chassis.moveToPoint(-68,   0,  400, {.forwards = true, .minSpeed = 100}, false);         
-    // chassis.moveToPoint(-58,   0,  400, {.forwards = false}, false);   
-    // //roller done
-    // // chassis.turnToHeading(0, 600, {}, false);
-    // chassis.moveToPoint(-58.5,   -17,  1200, {.forwards = false}, false);
-    // // chainbarFunction(-97000);
+    
+    intake_piston.set_value(false);
+    chassis.moveToPoint(-68,   0,  400, {.forwards = true}, false);          
+    chassis.moveToPoint(-59,   0,  400, {.forwards = false, .minSpeed = 110}, false);          
+    chassis.moveToPoint(-68,   0,  400, {.forwards = true}, false);
+    chassis.moveToPoint(-59,   0,  400, {.forwards = false, .minSpeed = 110}, false);         
+    chassis.moveToPoint(-68,   0,  400, {.forwards = true}, false);   
+    //roller done
+    // chassis.turnToHeading(0, 600, {}, false);
+
+
+    // chassis.moveToPoint(-58.5,   -17,  1200, {.forwards = true}, false);
+
     // chassis.turnToHeading(302, 600, {}, false);
-    // chassis.moveToPoint(-57.3,   -17.55,  800, {.forwards = false}, false);
+    // chassis.moveToPoint(-55,   -17.55,  800, {.forwards = true}, false);
     // delay(300);
     // intake_piston.set_value(true);
     // // score first pin
-    // // chainbarFunction(-80000);
     // chassis.moveToPoint(-59,   -16.5,  1200, {.forwards = true}, false);
+
     // chassis.turnToHeading(42, 600, {}, false);
     // chassis.moveToPoint(-61,   -14.5,  800, {.forwards = false}, false);
     // // chainbarFunction(-94000);
@@ -387,21 +397,6 @@ void autonomous() {
    
 
 
-
-
-
-
-
-
-
-
-
-    
-
-
-
-
-
 }
 
 /**
@@ -455,12 +450,12 @@ void opcontrol() {
     // chainbar.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 
     while (true) {
-        int turn = master.get_analog(ANALOG_LEFT_Y);
-        int dir = master.get_analog(ANALOG_RIGHT_X);
-        left_motors.move(dir - turn);
-        right_motors.move(dir + turn);
+        int dir = master.get_analog(ANALOG_RIGHT_Y);
+        int turn = master.get_analog(ANALOG_LEFT_X)*0.8;
+        left_motors.move(dir + turn);
+        right_motors.move(dir - turn);
 
-        // Lift / intake — independent of chainbar now
+        // Lift / intake — independexant of chainbar now
         if (master.get_digital(DIGITAL_L1)) {
             liftMotor.move(127);
         } else if (master.get_digital(DIGITAL_L2)) {
@@ -481,6 +476,7 @@ void opcontrol() {
         if(master.get_digital_new_press(DIGITAL_R1)){
             intake_piston.toggle(); // toggle piston state
         }
+    
         // if (master.get_digital_new_press(DIGITAL_X)) {
         //     intake_piston.set_value(false); // retract piston
         //     chainbarFunction(-91427); // macro: drive chainbar to preset position
@@ -495,11 +491,6 @@ void opcontrol() {
         //     chainbarFunction(-105600);
         // }
         pros::delay(20);
-
-            
-
-
-
             
                                     // Run for 130 ms then update
     }
