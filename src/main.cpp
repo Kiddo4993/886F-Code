@@ -1,8 +1,10 @@
 #include "main.h"
 #include "lemlib/api.hpp" // IWYU pragma: keep
+#include "lemlib/chassis/chassis.hpp"
 #include "pros/misc.h"
 #include "pros/misc.hpp"
 #include "pros/motors.h"
+#include "pros/rotation.h"
 #include "pros/rotation.hpp"
 
 using namespace pros; // IWYU pragma: keep
@@ -13,7 +15,7 @@ pros::MotorGroup liftMotor({-11, 20});
 // pros::Motor intakeMotors({});
 // pros::Motor chainbar({});
 pros::Controller master(pros::E_CONTROLLER_MASTER); // create a controller object for the master controller
-pros::adi::Pneumatics intake_piston('E', false, true); // create a piston object for the pneumatic piston on port 1
+pros::adi::Pneumatics intake_piston('H', false, true); // create a piston object for the pneumatic piston on port 1
 // pros::Rotation chainbar_encoder(17);
 // drivetrain settings
 lemlib::Drivetrain drivetrain(&left_motors, // left motor group
@@ -26,10 +28,10 @@ lemlib::Drivetrain drivetrain(&left_motors, // left motor group
 
 
 pros::Imu imu(2);
-pros::Rotation verticalrotation_sensor(-6);
-pros::Rotation horizontalrotation_sensor(-7);
+pros::Rotation verticalrotation_sensor(13);
+pros::Rotation horizontalrotation_sensor(21);
 
-lemlib::TrackingWheel horizontal_tracking_wheel(&horizontalrotation_sensor, 2.0, 2);
+lemlib::TrackingWheel horizontal_tracking_wheel(&horizontalrotation_sensor, 2.0, -2);
 // vertical tracking wheel
 lemlib::TrackingWheel vertical_tracking_wheel(&verticalrotation_sensor, 2.0, 0);
 
@@ -84,9 +86,9 @@ lemlib::ControllerSettings lateral_controller(6, // proportional gain (kP)
 //                                               0 // maximum acceleration (slew)
 // );
 
-lemlib::ControllerSettings angular_controller(1.9, // proportional gain (kP)
+lemlib::ControllerSettings angular_controller(0.5, // proportional gain (kP)
                                               0, // integral gain (kI)
-                                              12.2, // derivative gain (kD)
+                                              20, // derivative gain (kD)
                                               3, // anti windup
                                               1, // small error range, in inches
                                               100, // small error range timeout, in milliseconds
@@ -300,8 +302,14 @@ void competition_initialize() {}
  */
 void autonomous() {
 
-    //Right side 
-    // chainbar.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+   chassis.setPose(0,0,0);
+
+   chassis.turnToHeading(90, 1000);
+
+
+
+    // // Right side 
+    // // chainbar.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
     // chassis.setPose(-62, 0, 270.0);  
     
     //  //chainbar to score position
@@ -312,19 +320,19 @@ void autonomous() {
     // chassis.moveToPoint(-68,   0,  400, {.forwards = true, .minSpeed = 100}, false);         
     // chassis.moveToPoint(-58,   0,  400, {.forwards = false}, false);   
     // //roller done
-    // chassis.turnToHeading(0, 600, {}, false);
+    // // chassis.turnToHeading(0, 600, {}, false);
     // chassis.moveToPoint(-58.5,   -17,  1200, {.forwards = false}, false);
-    // chainbarFunction(-97000);
+    // // chainbarFunction(-97000);
     // chassis.turnToHeading(302, 600, {}, false);
     // chassis.moveToPoint(-57.3,   -17.55,  800, {.forwards = false}, false);
     // delay(300);
     // intake_piston.set_value(true);
     // // score first pin
-    // chainbarFunction(-80000);
+    // // chainbarFunction(-80000);
     // chassis.moveToPoint(-59,   -16.5,  1200, {.forwards = true}, false);
     // chassis.turnToHeading(42, 600, {}, false);
     // chassis.moveToPoint(-61,   -14.5,  800, {.forwards = false}, false);
-    // chainbarFunction(-94000);
+    // // chainbarFunction(-94000);
     // delay(600);
     // intake_piston.set_value(false);
     // delay(500);
@@ -335,7 +343,7 @@ void autonomous() {
     
     // chassis.moveToPoint(-59,   16.5,  1200, {.forwards = false}, false);
 
-    // chainbarFunction(-80000);
+    // // chainbarFunction(-80000);
     // intake_piston.set_value(true);
 
     // // put in second cone 
@@ -447,10 +455,10 @@ void opcontrol() {
     // chainbar.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 
     while (true) {
-        int dir = master.get_analog(ANALOG_LEFT_Y);
-        int turn = master.get_analog(ANALOG_RIGHT_X);
-        left_motors.move(dir + turn);
-        right_motors.move(dir - turn);
+        int turn = master.get_analog(ANALOG_LEFT_Y);
+        int dir = master.get_analog(ANALOG_RIGHT_X);
+        left_motors.move(dir - turn);
+        right_motors.move(dir + turn);
 
         // Lift / intake — independent of chainbar now
         if (master.get_digital(DIGITAL_L1)) {
@@ -470,7 +478,7 @@ void opcontrol() {
         // }
 
         // Chainbar — separate block, unaffected by any other butto
-        if(master.get_digital_new_press(DIGITAL_B)){
+        if(master.get_digital_new_press(DIGITAL_R1)){
             intake_piston.toggle(); // toggle piston state
         }
         // if (master.get_digital_new_press(DIGITAL_X)) {
