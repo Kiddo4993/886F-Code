@@ -1,21 +1,24 @@
 #include "main.h"
 #include "lemlib/api.hpp" // IWYU pragma: keep
 #include "lemlib/chassis/chassis.hpp"
+#include "pros/abstract_motor.hpp"
 #include "pros/misc.h"
 #include "pros/misc.hpp"
 #include "pros/motors.h"
+#include "pros/motors.hpp"
 #include "pros/rotation.h"
 #include "pros/rotation.hpp"
 
 using namespace pros; // IWYU pragma: keep
 
-pros::MotorGroup right_motors({1, 9, 4}, pros::MotorGearset::blue); 
-pros::MotorGroup left_motors({-3, -5, -10}, pros::MotorGearset::blue); 
-pros::MotorGroup liftMotor({-11, 20});
+pros::MotorGroup right_motors({1, 2, 3}, pros::MotorGearset::blue); 
+pros::MotorGroup left_motors({-4, -5, -6}, pros::MotorGearset::blue); 
+pros::MotorGroup liftMotor({-11, 12});
 // pros::Motor intakeMotors({});
 // pros::Motor chainbar({});
 pros::Controller master(pros::E_CONTROLLER_MASTER); // create a controller object for the master controller
 pros::adi::Pneumatics intake_piston('H', false, true); // create a piston object for the pneumatic piston on port 1
+pros::Motor intake(13, pros::v5::MotorGears::blue);
 // pros::Rotation chainbar_encoder(17);
 // drivetrain settings
 lemlib::Drivetrain drivetrain(&left_motors, // left motor group
@@ -27,13 +30,14 @@ lemlib::Drivetrain drivetrain(&left_motors, // left motor group
 );
 
 
-pros::Imu imu(2);
-pros::Rotation verticalrotation_sensor(13);
-pros::Rotation horizontalrotation_sensor(21);
+pros::Imu imu(14);
+pros::Rotation verticalrotation_sensor(15);
+pros::Rotation horizontalrotation_sensor(-16);
+pros::Rotation liftRotation(18);
 
-lemlib::TrackingWheel horizontal_tracking_wheel(&horizontalrotation_sensor, 2.0, -2);
+lemlib::TrackingWheel horizontal_tracking_wheel(&horizontalrotation_sensor, 2.0, -1);
 // vertical tracking wheel
-lemlib::TrackingWheel vertical_tracking_wheel(&verticalrotation_sensor, 2.0, 0);
+lemlib::TrackingWheel vertical_tracking_wheel(&verticalrotation_sensor, 2.0, 1.2);
 
 
 lemlib::OdomSensors sensors(&vertical_tracking_wheel, // vertical tracking wheel 1, set to null
@@ -108,67 +112,67 @@ lemlib::Chassis chassis(drivetrain, // drivetrain settings
 // using a PID loop. Runs as its own pros::Task, so calling this function does
 // not block the caller — use it as a macro (e.g. on a button press) to send
 // the chainbar to a preset position while the rest of opcontrol keeps running.
-// void chainbarFunction(int targetPosition) {
-//     static pros::Task* chainbarTask = nullptr;
-//     static volatile bool stopRequested = false;
-//     static volatile bool taskFinished = true;
+void LiftToPosition(int targetPosition) {
+    static pros::Task* liftTask = nullptr;
+    static volatile bool stopRequested = false;
+    static volatile bool taskFinished = true;
 
-//     // ask any chainbar PID task already in progress to stop on its own and
-//     // wait briefly for it to actually finish, instead of force-killing it
-//     // with remove(). Killing a task while it's mid-way through chainbar.move()
-//     // can leave the motor's port lock held forever, hanging every future
-//     // call to that motor.
-//     if (chainbarTask != nullptr) {
-//         stopRequested = true;
-//         uint32_t waitStart = pros::millis();
-//         while (!taskFinished && pros::millis() - waitStart < 100) {
-//             pros::delay(5);
-//         }
-//         delete chainbarTask;
-//         chainbarTask = nullptr;
-//     }
+    // ask any lift PID task already in progress to stop on its own and
+    // wait briefly for it to actually finish, instead of force-killing it
+    // with remove(). Killing a task while it's mid-way through liftMotor.move()
+    // can leave the motors' port lock held forever, hanging every future
+    // call to those motors.
+    if (liftTask != nullptr) {
+        stopRequested = true;
+        uint32_t waitStart = pros::millis();
+        while (!taskFinished && pros::millis() - waitStart < 100) {
+            pros::delay(5);
+        }
+        delete liftTask;
+        liftTask = nullptr;
+    }
 
-//     stopRequested = false;
-//     taskFinished = false;
+    stopRequested = false;
+    taskFinished = false;
 
-//     chainbarTask = new pros::Task([targetPosition]() {
-//         double kP = 8;  // Proportional gain, adjust as necessary
-//         double kI = 0.0;  // Integral gain, adjust as  necessary
-//         double kD = 3;  // Derivative gain, adjust as necessary
+    liftTask = new pros::Task([targetPosition]() {
+        double kP = 8;  // Proportional gain, adjust as necessary
+        double kI = 0.0;  // Integral gain, adjust as necessary
+        double kD = 3;  // Derivative gain, adjust as necessary
 
-//         double error = 0;
-//         double previousError = 0;
-//         double integral = 0;
-//         double derivative = 0;
+        double error = 0;
+        double previousError = 0;
+        double integral = 0;
+        double derivative = 0;
 
-//         const double errorThreshold = 1000;  // centidegrees (~0.2 degrees) considered "at target"
+        const double errorThreshold = 100;  // centidegrees (~1 degree) considered "at target"
 
-//         while (!stopRequested) {
-//             error = targetPosition - chainbar_encoder.get_position();
+        while (!stopRequested) {
+            error = targetPosition - liftRotation.get_position();
 
-//             integral += error;
-//             derivative = error - previousError;
+            integral += error;
+            derivative = error - previousError;
 
-//             double output = (kP * error) + (kI * integral) + (kD * derivative);
+            double output = (kP * error) + (kI * integral) + (kD * derivative);
 
-//             // clamp output to valid motor voltage range
-//             if (output >70) output = 70;
-//             if (output < -70) output = -70;
+            // clamp output to valid motor voltage range
+            if (output > 70) output = 70;
+            if (output < -70) output = -70;
 
-//             chainbar.move(output);
+            liftMotor.move(output);  // drives both lift motors in the group together
 
-//             previousError = error;
+            previousError = error;
 
-//             // exit as soon as the chainbar is within errorThreshold of the target
-//             if ((error < 0 ? -error : error) < errorThreshold) break;
+            // exit as soon as the lift is within errorThreshold of the target
+            if ((error < 0 ? -error : error) < errorThreshold) break;
 
-//             pros::delay(10);  // small delay to prevent CPU overload
-//         }
+            pros::delay(10);  // small delay to prevent CPU overload
+        }
 
-//         chainbar.brake();  // hold the final position
-//         taskFinished = true;
-//     });
-// }
+        liftMotor.brake();  // hold the final position
+        taskFinished = true;
+    });
+}
 // // initialize function. Runs on program startup
 void initialize() {
     intake_piston.set_value(false);
@@ -183,6 +187,7 @@ void initialize() {
             pros::lcd::print(0, "X: %f", chassis.getPose().x); // x
             pros::lcd::print(1, "Y: %f", chassis.getPose().y); // y
             pros::lcd::print(2, "Theta: %f", chassis.getPose().theta); // heading
+            pros::lcd::print(3, "Lift Degrees: %f", liftRotation.get_position());
             // pros::lcd::print(3, "Chainbar: %d", chainbar_encoder.get_position()); // chainbar position, in encoder ticks (centidegrees)
             // delay to save resources
             pros::delay(100);
@@ -198,13 +203,13 @@ void initialize() {
  * "I was pressed!" and nothing.
  */
 void on_center_button() {
-	static bool pressed = false;
-	pressed = !pressed;
-	if (pressed) {
-		pros::lcd::set_text(2, "I was pressed!");
-	} else {
-		pros::lcd::clear_line(2);
-	}
+    static bool pressed = false;
+    pressed = !pressed;
+    if (pressed) {
+        pros::lcd::set_text(2, "I was pressed!");
+    } else {
+        pros::lcd::clear_line(2);
+    }
 }
 
 
@@ -215,10 +220,10 @@ void on_center_button() {
  * to keep execution time for this mode under a few seconds.
  */
 // void initialize() {
-// 	pros::lcd::initialize();
-// 	pros::lcd::set_text(1, "Hello PROS User!");
+//  pros::lcd::initialize();
+//  pros::lcd::set_text(1, "Hello PROS User!");
 
-// 	pros::lcd::register_btn1_cb(on_center_button);
+//  pros::lcd::register_btn1_cb(on_center_button);
 // }
 
 /**
@@ -227,58 +232,6 @@ void on_center_button() {
  * the robot is enabled, this task will exit.
  */
 void autoskills() {
-
-    chassis.setPose(-62, 0, 270.0);  
-
-    chassis.moveToPoint(0, 0, 10000);
-
-
-    // chainbar.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-    // chassis.setPose(0, -62, 180);  
-    
-    // intake_piston.set_value(false);
-    // chassis.moveToPoint(0,   -58,  500, {.forwards = false}, false);          
-    // chassis.moveToPoint(0,   -64,  500, {.forwards = true, .minSpeed = 60}, false);          
-    // chassis.moveToPoint(0,   -58,  500, {.forwards = false}, false);
-    // chassis.moveToPoint(0,   -64,  500, {.forwards = true, .minSpeed = 60}, false);         
-    // chassis.moveToPoint(0,   -50,  1000, {.forwards = false}, false);   
-    // chainbarFunction(-2500);
-    // chassis.turnToHeading(270, 600, {}, false);
-    // chassis.moveToPoint(-18.2,   -50,  900, {.forwards = true}, false);
-    // chainbarFunction(0);
-    // delay(300);
-    // intake_piston.set_value(true);
-    
-    // delay(300);
-    // chainbarFunction(0);
-    // chassis.moveToPoint(-8,   -51,  900, {.forwards = false}, false); 
-    // chassis.turnToHeading(325, 600, {}, false);
-    // chassis.moveToPoint(-24,   -27,  1700, {.forwards = true, .maxSpeed = 30}, true); 
-    // chassis.waitUntil(20);
-    // intake_piston.set_value(false);
-    // chassis.waitUntilDone();
-    // chassis.turnToHeading(0, 600, {}, false);
-    // chainbarFunction(-15000);
-    // chassis.moveToPoint(-24,   -45,  1500, {.forwards = false}, false); 
-    // chainbarFunction(-108000);
-    // delay(2000);
-    // intake_piston.set_value(true);
-    //  chainbarFunction(-8000);
-
-    //  chassis.turnToHeading(25, 600);
-    //  chassis.moveToPoint(0, 0, 1000, {.forwards = true}, false);
-
-
-
-
-
-
-
-
-
-
-
-
 
 }
 
@@ -413,20 +366,20 @@ void autonomous() {
  * task, not resume it from where it left off.
  */
 void opcontrol() {
-	
+    
     
 
-	// while (true) {
-		// pros::lcd::print(0, "%d %d %d", (pros::lcd::read_buttons() & LCD_BTN_LEFT) >> 2,
-		//                  (pros::lcd::read_buttons() & LCD_BTN_CENTER) >> 1,
-		//                  (pros::lcd::read_buttons() & LCD_BTN_RIGHT) >> 0);  // Prints status of the emulated screen LCDs
+    // while (true) {
+        // pros::lcd::print(0, "%d %d %d", (pros::lcd::read_buttons() & LCD_BTN_LEFT) >> 2,
+        //                  (pros::lcd::read_buttons() & LCD_BTN_CENTER) >> 1,
+        //                  (pros::lcd::read_buttons() & LCD_BTN_RIGHT) >> 0);  // Prints status of the emulated screen LCDs
 
-		// Arcade control scheme
-		// int dir = master.get_analog(ANALOG_LEFT_Y);    // Gets amount forward/backward from left joystick
-		// int turn = master.get_analog(ANALOG_RIGHT_X);  // Gets the turn left/right from right joystick
-		// left_motors.move(dir + turn);                      // Sets left motor voltage
-		// right_motors.move(dir - turn);                     // Sets right motor voltage
-		// pros::delay(20);      
+        // Arcade control scheme
+        // int dir = master.get_analog(ANALOG_LEFT_Y);    // Gets amount forward/backward from left joystick
+        // int turn = master.get_analog(ANALOG_RIGHT_X);  // Gets the turn left/right from right joystick
+        // left_motors.move(dir + turn);                      // Sets left motor voltage
+        // right_motors.move(dir - turn);                     // Sets right motor voltage
+        // pros::delay(20);      
 
         // if (master.get_digital(DIGITAL_R1)) {
         //     liftMotor.move(127);
@@ -450,8 +403,8 @@ void opcontrol() {
     // chainbar.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 
     while (true) {
-        int dir = master.get_analog(ANALOG_RIGHT_Y);
-        int turn = master.get_analog(ANALOG_LEFT_X)*0.8;
+        int dir = master.get_analog(ANALOG_LEFT_Y);
+        int turn = master.get_analog(ANALOG_RIGHT_X)*0.8;
         left_motors.move(dir + turn);
         right_motors.move(dir - turn);
 
