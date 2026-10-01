@@ -19,6 +19,7 @@ pros::MotorGroup liftMotor({-11, 12});
 pros::Controller master(pros::E_CONTROLLER_MASTER); // create a controller object for the master controller
 pros::adi::Pneumatics intake_piston('H', false, true); // create a piston object for the pneumatic piston on port 1
 pros::Motor intake(13, pros::v5::MotorGears::blue);
+pros::Motor clamp(7, pros::v5::MotorGears::blue);
 // pros::Rotation chainbar_encoder(17);
 // drivetrain settings
 lemlib::Drivetrain drivetrain(&left_motors, // left motor group
@@ -417,6 +418,22 @@ void opcontrol() {
             liftMotor.move(0);
         }
 
+        if (master.get_digital(DIGITAL_R1)) {
+            intake.move(127);
+        } else if (master.get_digital(DIGITAL_R2)) {
+            intake.move(-127);
+        } else {
+            intake.move(0);
+        }
+
+        if (master.get_digital(DIGITAL_UP)) {
+            clamp.move(127);
+        } else if (master.get_digital(DIGITAL_DOWN)) {
+            clamp.move(-127);
+        } else {
+            clamp.move(0);
+        }
+
         // if (master.get_digital(DIGITAL_R2)) {
         //     chainbar.move(75);
         // } else if (master.get_digital(DIGITAL_R1)) {
@@ -426,7 +443,7 @@ void opcontrol() {
         // }
 
         // Chainbar — separate block, unaffected by any other butto
-        if(master.get_digital_new_press(DIGITAL_R1)){
+        if(master.get_digital_new_press(DIGITAL_X)) {
             intake_piston.toggle(); // toggle piston state
         }
     
