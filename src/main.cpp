@@ -109,69 +109,65 @@ lemlib::Chassis chassis(drivetrain, // drivetrain settings
 );
 
 
-// Moves the chainbar to targetPosition (centidegrees, from chainbar_encoder)
-// using a PID loop. Runs as its own pros::Task, so calling this function does
-// not block the caller — use it as a macro (e.g. on a button press) to send
-// the chainbar to a preset position while the rest of opcontrol keeps running.
-void LiftToPosition(int targetPosition) {
-    static pros::Task* liftTask = nullptr;
-    static volatile bool stopRequested = false;
-    static volatile bool taskFinished = true;
+static pros::Task* liftTask = nullptr;
+static volatile bool liftStopRequested = false;
+static volatile bool liftTaskFinished = true;
 
-    // ask any lift PID task already in progress to stop on its own and
-    // wait briefly for it to actually finish, instead of force-killing it
-    // with remove(). Killing a task while it's mid-way through liftMotor.move()
-    // can leave the motors' port lock held forever, hanging every future
-    // call to those motors.
+void StopLiftMacro() {
+    liftStopRequested = true;
+}
+
+// Moves the lift to a target in rotation-sensor centidegrees without blocking.
+void LiftToPosition(int targetPosition) {
+    StopLiftMacro();
+
     if (liftTask != nullptr) {
-        stopRequested = true;
-        uint32_t waitStart = pros::millis();
-        while (!taskFinished && pros::millis() - waitStart < 100) {
+        while (!liftTaskFinished) {
             pros::delay(5);
         }
         delete liftTask;
         liftTask = nullptr;
     }
 
-    stopRequested = false;
-    taskFinished = false;
+    liftStopRequested = false;
+    liftTaskFinished = false;
 
     liftTask = new pros::Task([targetPosition]() {
-        double kP = 8;  // Proportional gain, adjust as necessary
-        double kI = 0.0;  // Integral gain, adjust as necessary
-        double kD = 3;  // Derivative gain, adjust as necessary
+        constexpr double kP = 0.35;
+        constexpr double kI = 0.0;
+        constexpr double kD = 0.08;
+        constexpr double errorThreshold = 100.0;
+        constexpr int stableCyclesRequired = 5;
+        constexpr uint32_t timeout = 2500;
 
-        double error = 0;
         double previousError = 0;
         double integral = 0;
-        double derivative = 0;
+        int stableCycles = 0;
+        const uint32_t startTime = pros::millis();
 
-        const double errorThreshold = 100;  // centidegrees (~1 degree) considered "at target"
-
-        while (!stopRequested) {
-            error = targetPosition - liftRotation.get_position();
-
+        while (!liftStopRequested && pros::millis() - startTime < timeout) {
+            const double error = targetPosition - liftRotation.get_position();
             integral += error;
-            derivative = error - previousError;
-
+            const double derivative = error - previousError;
             double output = (kP * error) + (kI * integral) + (kD * derivative);
 
-            // clamp output to valid motor voltage range
-            if (output > 70) output = 70;
-            if (output < -70) output = -70;
+            if (output > 127) output = 127;
+            if (output < -127) output = -127;
+            liftMotor.move(output);
 
-            liftMotor.move(output);  // drives both lift motors in the group together
+            if (error > -errorThreshold && error < errorThreshold) {
+                stableCycles++;
+                if (stableCycles >= stableCyclesRequired) break;
+            } else {
+                stableCycles = 0;
+            }
 
             previousError = error;
-
-            // exit as soon as the lift is within errorThreshold of the target
-            if ((error < 0 ? -error : error) < errorThreshold) break;
-
-            pros::delay(10);  // small delay to prevent CPU overload
+            pros::delay(10);
         }
 
-        liftMotor.brake();  // hold the final position
-        taskFinished = true;
+        liftMotor.brake();
+        liftTaskFinished = true;
     });
 }
 // // initialize function. Runs on program startup
@@ -411,11 +407,11 @@ void opcontrol() {
 
         // Lift / intake — independexant of chainbar now
         if (master.get_digital(DIGITAL_L1)) {
+            StopLiftMacro();
             liftMotor.move(127);
         } else if (master.get_digital(DIGITAL_L2)) {
+            StopLiftMacro();
             liftMotor.move(-127);
-        } else {
-            liftMotor.move(0);
         }
 
         if (master.get_digital(DIGITAL_R1)) {
