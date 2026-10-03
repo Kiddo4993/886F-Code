@@ -24,9 +24,9 @@ pros::Motor clamp(7, pros::v5::MotorGears::blue);
 // drivetrain settings
 lemlib::Drivetrain drivetrain(&left_motors, // left motor group
                               &right_motors, // right motor group
-                              9.5, // 10 inch track width
-                              lemlib::Omniwheel::NEW_275, // using new 4" omnis
-                              450, // drivetrain rpm is 360
+                              9.5, // 9.5 inch track width
+                              lemlib::Omniwheel::NEW_275, // using new 2.75" omnis
+                              450, // drivetrain rpm is 450
                               2 // horizontal drift is 2 (for now)
 );
 
@@ -36,9 +36,9 @@ pros::Rotation verticalrotation_sensor(15);
 pros::Rotation horizontalrotation_sensor(-16);
 pros::Rotation liftRotation(18);
 
-lemlib::TrackingWheel horizontal_tracking_wheel(&horizontalrotation_sensor, 2.0, -1);
+lemlib::TrackingWheel horizontal_tracking_wheel(&horizontalrotation_sensor, lemlib::Omniwheel::NEW_2, -1);
 // vertical tracking wheel
-lemlib::TrackingWheel vertical_tracking_wheel(&verticalrotation_sensor, 2.0, 1.2);
+lemlib::TrackingWheel vertical_tracking_wheel(&verticalrotation_sensor, lemlib::Omniwheel::NEW_2, 1.2);
 
 
 lemlib::OdomSensors sensors(&vertical_tracking_wheel, // vertical tracking wheel 1, set to null
