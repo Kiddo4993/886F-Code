@@ -1,13 +1,14 @@
 #include "main.h"
 #include "lemlib/api.hpp"
+#include "pros/misc.h"
 #include <algorithm>
 #include <cmath>
 
 using namespace pros;
 
 // Motors and controller
-MotorGroup right_motors({2, 3, 4}, MotorGearset::blue);
-MotorGroup left_motors({-5, -6, -7}, MotorGearset::blue);
+MotorGroup right_motors({3, 4, 5}, MotorGearset::blue);
+MotorGroup left_motors({-6, -7, -8}, MotorGearset::blue);
 MotorGroup liftMotor({-11, 12});
 Motor intake(13, v5::MotorGears::blue);
 Motor clamp(1, v5::MotorGears::blue);
@@ -118,7 +119,10 @@ void LiftToPosition(int targetPosition) {
 
 void initialize() {
     wrist.set_value(false);
+    intake_lift.set_value(false);
     liftMotor.set_brake_mode(E_MOTOR_BRAKE_HOLD);
+
+    liftRotation.reset_position();
 
     pros::lcd::initialize();
     chassis.calibrate();
@@ -161,10 +165,10 @@ void opcontrol() {
             liftMotor.move(0);
         }
 
-        if (master.get_digital(DIGITAL_R1)) {
+        if (master.get_digital(DIGITAL_R2)) {
             intake.move(127);
             clamp.move(127);
-        } else if (master.get_digital(DIGITAL_R2)) {
+        } else if (master.get_digital(DIGITAL_R1)) {
             intake.move(-127);
             clamp.move(-127);
         } else {
@@ -174,6 +178,10 @@ void opcontrol() {
 
         if (master.get_digital_new_press(DIGITAL_X)) {
             wrist.toggle();
+        }
+
+        if (master.get_digital_new_press(DIGITAL_A)) {
+            intake_lift.toggle();
         }
 
         pros::delay(20);
