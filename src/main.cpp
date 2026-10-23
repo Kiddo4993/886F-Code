@@ -1,11 +1,12 @@
 #include "main.h"
 #include "lemlib/api.hpp"
+#include "pros/misc.h"
 
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
 
-// Hardware
+// Hardware Setup
 pros::MotorGroup leftMotors({-3, -4, -5}, pros::MotorGearset::blue);
 pros::MotorGroup rightMotors({6, 7, 8}, pros::MotorGearset::blue);
 pros::MotorGroup liftMotor({-11, 12});
@@ -32,6 +33,8 @@ pros::Imu imu(14);
 pros::Rotation verticalRotationSensor(15);
 pros::Rotation horizontalRotationSensor(16);
 pros::Rotation liftRotation(-20);
+
+// Odometry Set up
 
 lemlib::TrackingWheel horizontalTrackingWheel(
     &horizontalRotationSensor, 2.0, 0.175
@@ -132,6 +135,8 @@ enum class macroStepState {
 macroStepState macroStep = macroStepState::idle;
 uint32_t macroStepStart = 0;
 
+// Function for single pin scoring
+
 void startSinglePin() {
     stopLiftMacro();
     wrist.retract();
@@ -150,6 +155,8 @@ void startSinglePin() {
     macroStep = macroStepState::idle;
 }
 
+// Function for Matchloading
+
 void startMatchLoad() {
     stopLiftMacro();
 
@@ -167,6 +174,8 @@ void startMatchLoad() {
     pros::delay(200);
     liftToPosition(10000);
 }
+
+// Function for auto for lift
 
 void startIntakeLift(){
     intake.move(127);
@@ -187,7 +196,10 @@ void startIntakeLift(){
     macroStepStart = pros::millis();
 }
 
+// Intializing all the functions for the start
+
 void initialize() {
+
     wrist.set_value(false);
     intakeLift.set_value(false);
     liftMotor.set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
@@ -197,6 +209,7 @@ void initialize() {
     chassis.calibrate();
 
     pros::Task screenTask([] {
+        // For testing purposes 
         while (true) {
             const auto pose = chassis.getPose();
 
@@ -211,6 +224,8 @@ void initialize() {
             pros::delay(100);
         }
     });
+
+    // Lift Macro
 
     pros::Task liftTask([] {
         constexpr double kP = 0.012;
@@ -276,6 +291,9 @@ void competition_initialize() {}
 void autonomous() {}
 
 void opcontrol() {
+
+    // controller commands 
+
     bool matchLoadReady = false;
     while (true) {
         const int drive = master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
